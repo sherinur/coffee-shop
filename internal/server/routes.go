@@ -3,22 +3,27 @@ package server
 import (
 	"fmt"
 	"net/http"
+
+	"hot-coffee/internal/handler"
 )
 
 func (s *Server) registerRoutes() {
 	// // basic routes
 	// s.mux.HandleFunc("GET /health", s.HandleHealth)
 
-	// // bucket routes
-	// s.mux.HandleFunc("GET /{BucketName}", s.HandleGetBucket)
-	// s.mux.HandleFunc("GET /", s.HandleListBuckets)
-	// s.mux.HandleFunc("PUT /{BucketName}", s.HandleCreateBucket)
-	// s.mux.HandleFunc("DELETE /{BucketName}", s.HandleDeleteBucket)
+	// Order routes
+	s.mux.HandleFunc("POST /orders", handler.CreateOrder)
+	s.mux.HandleFunc("GET /orders", handler.RetrieveOrders)
+	s.mux.HandleFunc("GET /orders/{id}", handler.RetrieveOrder)
+	s.mux.HandleFunc("PUT /orders/{id}", handler.UpdateOrder)
+	s.mux.HandleFunc("DELETE /orders/{id}", handler.DeleteOrder)
+	s.mux.HandleFunc("POST	 /orders/{id}/close", handler.CloseOrder)
 
-	// // object routes
-	// s.mux.HandleFunc("PUT /{BucketName}/{ObjectKey}", s.HandlePutObject)
-	// s.mux.HandleFunc("GET /{BucketName}/{ObjectKey}", s.HandleGetObject)
-	// s.mux.HandleFunc("DELETE /{BucketName}/{ObjectKey}", s.HandleDeleteObject)
+	// Menu routes
+
+	// Inventory routes
+
+	// Aggregation routes
 }
 
 func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
