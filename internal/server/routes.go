@@ -4,24 +4,45 @@ import (
 	"fmt"
 	"net/http"
 
+	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
+	"hot-coffee/internal/service"
 )
 
 func (s *Server) registerRoutes() {
 	// // basic routes
 	// s.mux.HandleFunc("GET /health", s.HandleHealth)
 
-	// Order routes
-	s.mux.HandleFunc("POST /orders", handler.CreateOrder)
-	s.mux.HandleFunc("GET /orders", handler.RetrieveOrders)
-	s.mux.HandleFunc("GET /orders/{id}", handler.RetrieveOrder)
-	s.mux.HandleFunc("PUT /orders/{id}", handler.UpdateOrder)
-	s.mux.HandleFunc("DELETE /orders/{id}", handler.DeleteOrder)
-	s.mux.HandleFunc("POST	 /orders/{id}/close", handler.CloseOrder)
+	// ! 1)	Конфликт имен для интерфейса и структуры
+	// !  	Ошибка: Название интерфейсов и структур одинаковое
+	// !	(например, InventoryService и inventoryService). Это может быть запутывающим.
+	// ! 	Рекомендация: Используйте префиксы или более уникальные имена для интерфейсов,
+	// ! 	например, InventoryService (интерфейс) и InventoryServiceImpl (структура) или InventoryRepo и inventoryRepositoryImpl.
+
+	// ! 2) Неиспользование интерфейсов в handler
+	// ! 	Ошибка: В inventoryHandler интерфейс InventoryService используется напрямую вместо указателя на service.InventoryService.
+	// !	Решение: Убедитесь, что InventoryService является интерфейсом,
+	// ! 	а не указателем на конкретную реализацию, чтобы сохранить гибкость в тестировании и подмене реализации.
+
+	// Inventory
+	inventoryRepository := dal.NewInventoryRepository("./data/inventory.json")
+	inventoryService := service.NewInventoryService(inventoryRepository)
+	inventoryHandler := handler.NewInventoryHandler(inventoryService)
+
+	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
+
+	// // Handlers
+	// orderHandler := handler.NewOrderHandler()
+
+	// // Order routes
+	// s.mux.HandleFunc("POST /orders", orderHandler.CreateOrder)
+	// s.mux.HandleFunc("GET /orders", orderHandler.RetrieveOrders)
+	// s.mux.HandleFunc("GET /orders/{id}", orderHandler.RetrieveOrder)
+	// s.mux.HandleFunc("PUT /orders/{id}", orderHandler.UpdateOrder)
+	// s.mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
+	// s.mux.HandleFunc("POST	 /orders/{id}/close", orderHandler.CloseOrder)
 
 	// Menu routes
-
-	// Inventory routes
 
 	// Aggregation routes
 }
