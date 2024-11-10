@@ -2,7 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
+	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/service"
@@ -30,21 +31,47 @@ func NewInventoryHandler(s service.InventoryService) InventoryHandler {
 // 400 Bad Request — ошибка в запросе.
 // 500 Internal Server Error — ошибка на сервере.
 
+func WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(statusCode)
+
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(jsonResponse)
+	if err != nil {
+		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+	}
+}
+
 func WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jsonResponse)
+	formattedJSON, err := json.MarshalIndent(jsonResponse, "", " ")
+	if err != nil {
+		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		return
+	}
+
+	w.Write(formattedJSON)
 }
 
 func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
-	// TODO: Add ERROR log here, when error is writing
+	// TODO: if its statusCode == 500 -> add ERROR log
+	// TODO: in other cases 		  -> print DEBUG log
+
+	if statusCode == 500 {
+		slog.Error(err.Error()) // example
+	}
+
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
 	WriteJSONResponse(statusCode, errorJSON, w, r)
 }
 
 func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to Add a new inventory item.
+	if r.Body == nil {
+		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+
 	var item models.InventoryItem
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&item); err != nil {
@@ -52,10 +79,14 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	fmt.Println(item)
+	// TODO: Write debug log here
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Item is successfully created."))
+	if err := h.InventoryService.AddInventoryItem(item); err != nil {
+		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		return
+	}
+
+	WriteJSONResponse(http.StatusCreated, item, w, r)
 }
 
 func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Request) {
