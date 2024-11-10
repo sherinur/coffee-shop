@@ -30,6 +30,10 @@ func (s *Server) registerRoutes() {
 	inventoryHandler := handler.NewInventoryHandler(inventoryService)
 
 	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
+	s.mux.HandleFunc("GET /inventory", inventoryHandler.GetInventoryItems)
+	s.mux.HandleFunc("GET /inventory/{id}", inventoryHandler.GetInventoryItem)
+	s.mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.UpdateInventoryItem)
+	s.mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
 	// // Handlers
 	// orderHandler := handler.NewOrderHandler()
