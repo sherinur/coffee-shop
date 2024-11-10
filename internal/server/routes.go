@@ -2,11 +2,11 @@ package server
 
 import (
 	"fmt"
-	"net/http"
-
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
+	"log"
+	"net/http"
 )
 
 func (s *Server) registerRoutes() {
@@ -25,9 +25,20 @@ func (s *Server) registerRoutes() {
 	// ! 	а не указателем на конкретную реализацию, чтобы сохранить гибкость в тестировании и подмене реализации.
 
 	// Inventory
-	inventoryRepository := dal.NewInventoryRepository("./data/inventory.json")
+	inventoryRepository := dal.NewInventoryRepository(s.config.data_directory + "/inventory.json")
+	if inventoryRepository == nil {
+		log.Fatal("Failed to create inventory repository")
+	}
+
 	inventoryService := service.NewInventoryService(inventoryRepository)
+	if inventoryService == nil {
+		log.Fatal("Failed to create inventory service")
+	}
+
 	inventoryHandler := handler.NewInventoryHandler(inventoryService)
+	if inventoryHandler == nil {
+		log.Fatal("Failed to create inventory handler")
+	}
 
 	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
 	s.mux.HandleFunc("GET /inventory", inventoryHandler.GetInventoryItems)

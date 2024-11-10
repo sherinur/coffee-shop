@@ -14,6 +14,7 @@ type iLogger interface {
 	PrintfInfoMsg(string, ...interface{})
 	PrintfDebugMsg(string, ...interface{})
 	PrintfErrorMsg(string, ...interface{})
+	PrintfWarnMsg(string, ...interface{})
 	LogRequestMiddleware(http.Handler) http.Handler
 }
 
@@ -27,25 +28,22 @@ func New(debugMode bool) *Logger {
 	}
 }
 
-func printfMsg(level string, mes string, args ...interface{}) {
-	log.Printf(level+" "+mes, args...)
-}
-
 func (l *Logger) PrintfInfoMsg(mes string, args ...interface{}) {
-	// printfMsg("[INFO]", mes, args...)
 	slog.Info(mes, args...)
 }
 
 func (l *Logger) PrintfDebugMsg(mes string, args ...interface{}) {
 	if l.debugMode {
-		printfMsg("[DEBUG]", mes, args...)
-		// slog.Debug(mes, args...)
+		slog.Debug(mes, args...)
 	}
 }
 
 func (l *Logger) PrintfErrorMsg(mes string, args ...interface{}) {
-	// printfMsg("[ERROR]", mes, args...)
 	slog.Error(mes, args...)
+}
+
+func (l *Logger) PrintfWarnMsg(mes string, args ...interface{}) {
+	slog.Warn(mes, args...)
 }
 
 func (l *Logger) LogRequestMiddleware(next http.Handler) http.Handler {

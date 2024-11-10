@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log/slog"
-	"net/http"
-
+	"fmt"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
+	"log/slog"
+	"net/http"
 )
 
 type InventoryHandler interface {
@@ -22,14 +22,9 @@ type inventoryHandler struct {
 	InventoryService service.InventoryService
 }
 
-func NewInventoryHandler(s service.InventoryService) InventoryHandler {
+func NewInventoryHandler(s service.InventoryService) *inventoryHandler {
 	return &inventoryHandler{InventoryService: s}
 }
-
-// 200 OK — запрос был успешно обработан.
-// 201 Created — новый ресурс был успешно создан.
-// 400 Bad Request — ошибка в запросе.
-// 500 Internal Server Error — ошибка на сервере.
 
 func WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
@@ -57,8 +52,10 @@ func WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, 
 func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
 	// TODO: if its statusCode == 500 -> add ERROR log
 	// TODO: in other cases 		  -> print DEBUG log
+	// TODO: find case to add WARNING log (высосать из пальца)
 
-	if statusCode == 500 {
+	switch statusCode {
+	case http.StatusInternalServerError:
 		slog.Error(err.Error()) // example
 	}
 
@@ -71,6 +68,7 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
+	defer r.Body.Close()
 
 	var item models.InventoryItem
 	decoder := json.NewDecoder(r.Body)
@@ -81,24 +79,67 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 
 	// TODO: Write debug log here
 
-	if err := h.InventoryService.AddInventoryItem(item); err != nil {
-		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-		return
+	err := h.InventoryService.AddInventoryItem(item)
+	if err != nil {
+		switch err {
+		case service.ErrNotUniqueID:
+			WriteErrorResponse(http.StatusConflict, err, w, r)
+			return
+		default:
+			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
 	}
 
 	WriteJSONResponse(http.StatusCreated, item, w, r)
 }
 
+// 200 OK — запрос был успешно обработан.
+// 201 Created — новый ресурс был успешно создан.
+// 400 Bad Request — ошибка в запросе.
+// 500 Internal Server Error — ошибка на сервере.
+
 func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to RETRIEVE ALL ITEMS.
+	data, err := h.InventoryService.RetrieveInventoryItems()
+	if err != nil {
+		switch err {
+		default:
+			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	// TODO: Write debug log here
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be INVENTORY ITEMS RETRIEVING"))
+	w.Write(data)
 }
 
 func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to get the inventory item by id.
+	itemId := r.PathValue("id")
+	if len(itemId) == 0 {
+		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
+	}
+
+	data, err := h.InventoryService.RetrieveInventoryItem(itemId)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			return
+		default:
+			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	// TODO: Write debug log here
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be INVENTORY ITEM retrieving by id"))
+	_, err = w.Write(data)
+	if err != nil {
+		// TODO: Print error log here
+	}
 }
 
 func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +149,23 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 }
 
 func (h *inventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to delete the inventory item by id.
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be INVENTORY ITEM deleting by id"))
+	itemId := r.PathValue("id")
+	if len(itemId) == 0 {
+		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+	}
+
+	err := h.InventoryService.DeleteInventoryItem(itemId)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id %s not found", itemId), w, r)
+			return
+		default:
+			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	// TODO: Write debug log here
+	w.WriteHeader(http.StatusNoContent)
 }

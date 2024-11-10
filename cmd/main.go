@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"hot-coffee/internal/server"
 	"os"
 
-	"hot-coffee/internal/server"
+	. "hot-coffee/internal/utils"
 )
 
 // TODO: Test how flag parsing works, and find bugs
@@ -24,30 +25,31 @@ var (
 	dir        string
 )
 
-func CustomUsage() {
-	fmt.Println(`Coffee Shop Management System
-
-Usage:
-  hot-coffee [--port <N>] [--dir <S>] [--cfg <S>]
-  hot-coffee --help
-
-Options:
-  --help       Show this screen.
-  --port N     Port number.
-  --dir S      Path to the data directory.
-- --cfg S    Path to the config file`)
-}
-
 func init() {
-	flag.StringVar(&port, "port", "4400", "Port number")
+	flag.StringVar(&port, "port", "8080", "Port number")
 	flag.StringVar(&dir, "dir", "./data", "Path to the directory")
 	flag.StringVar(&configPath, "cfg", "configs/server.yaml", "Path to the config file")
 
 	flag.Usage = CustomUsage
 }
 
+func validate() error {
+	err := ValidatePort(port)
+	if err != nil {
+		return err
+	}
+
+	err = ValidateDir(dir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
+
+	validate()
 
 	port = ":" + port
 
