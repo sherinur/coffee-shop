@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )
@@ -32,9 +33,7 @@ var (
 
 func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	if err.Error() == "EOF" {
-		inventoryItems = []models.InventoryItem{}
-	} else if err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -58,9 +57,6 @@ func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 
 func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	// if err.Error() == "EOF" {
-	// 	inventoryItems = []models.InventoryItem{}
-	// } else
 	if err != nil {
 		return nil, err
 	}

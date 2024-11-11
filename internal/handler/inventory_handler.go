@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hot-coffee/internal/service"
-	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+
+	"hot-coffee/internal/service"
+	"hot-coffee/models"
 )
 
 type InventoryHandler interface {

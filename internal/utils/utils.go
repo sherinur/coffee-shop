@@ -130,6 +130,14 @@ func DirExists(path string) error {
 	return nil
 }
 
+func FileEmpty(file *os.File) bool {
+	if stat, _ := file.Stat(); stat.Size() == 0 {
+		return true
+	}
+
+	return false
+}
+
 func CustomUsage() {
 	fmt.Println(`Coffee Shop Management System
 
@@ -161,6 +169,10 @@ func ValidatePort(port string) error {
 
 func ValidateDir(dir string) error {
 	err := CreateDir(dir)
+	if err != nil {
+		return err
+	}
+
 	// Check if the path exists
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {

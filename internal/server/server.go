@@ -1,8 +1,9 @@
 package server
 
 import (
-	"hot-coffee/pkg/logger"
 	"net/http"
+
+	"hot-coffee/pkg/logger"
 )
 
 type Server struct {

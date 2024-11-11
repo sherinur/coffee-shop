@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hot-coffee/internal/utils"
-	"hot-coffee/models"
 	"os"
 	"path/filepath"
+
+	"hot-coffee/internal/utils"
+	"hot-coffee/models"
 )
 
 type InventoryRepository interface {
@@ -43,31 +44,31 @@ func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryI
 }
 
 func (r *inventoryRepository) GetAllItems() ([]models.InventoryItem, error) {
-	var inventoryItems []models.InventoryItem
+	inventoryItems := []models.InventoryItem{}
 
 	exists, err := utils.FileExists(r.filePath)
 	if err != nil {
-		return inventoryItems, err
+		return []models.InventoryItem{}, err
 	}
 	if !exists {
-		return inventoryItems, nil
+		return []models.InventoryItem{}, nil
 	}
 
 	file, err := os.Open(r.filePath)
 	if err != nil {
-		return inventoryItems, err
+		return []models.InventoryItem{}, err
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
 
-	if stat, _ := file.Stat(); stat.Size() == 0 {
-		return inventoryItems, nil
+	if utils.FileEmpty(file) {
+		return []models.InventoryItem{}, nil
 	}
 
 	err = decoder.Decode(&inventoryItems)
 	if err != nil {
-		return inventoryItems, err
+		return []models.InventoryItem{}, err
 	}
 
 	return inventoryItems, nil
@@ -110,32 +111,14 @@ func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) e
 		}
 	}
 
-	// Opening a file for recording
-	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0o644)
+	jsonData, err := json.MarshalIndent(inventoryItems, "", " ")
 	if err != nil {
-		return fmt.Errorf("failed to open file %s for writing: %w", r.filePath, err)
-	}
-	defer file.Close()
-
-	// Checking for file emptiness before writing
-	stat, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to get file stat: %w", err)
-	}
-	if stat.Size() == 0 {
-		inventoryItems = []models.InventoryItem{}
+		return err
 	}
 
-	// // Converting data to JSON format
-	jsonData, err := json.MarshalIndent(inventoryItems, "", "  ")
+	err = os.WriteFile(r.filePath, jsonData, 0o644)
 	if err != nil {
-		return fmt.Errorf("error marshalling inventory items: %w", err)
-	}
-
-	// Writing data to a file
-	_, err = file.Write(jsonData)
-	if err != nil {
-		return fmt.Errorf("failed to write data to file %s: %w", r.filePath, err)
+		return err
 	}
 
 	return nil
