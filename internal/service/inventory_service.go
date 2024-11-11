@@ -2,7 +2,8 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
+	"log"
+
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )
@@ -11,6 +12,7 @@ type InventoryService interface {
 	AddInventoryItem(i models.InventoryItem) error
 	RetrieveInventoryItems() ([]byte, error)
 	RetrieveInventoryItem(id string) ([]byte, error)
+	UpdateInventoryItem(id string, item models.InventoryItem) error
 	DeleteInventoryItem(id string) error
 }
 
@@ -25,29 +27,39 @@ func NewInventoryService(repo dal.InventoryRepository) *inventoryService {
 	return &inventoryService{InventoryRepository: repo}
 }
 
-var (
-	ErrNotUniqueID error = errors.New("ingrediend ID must be unique")
-	ErrNoItem      error = errors.New("item not found")
-)
+func ValidateItem(i models.InventoryItem) error {
+	if i.IngredientID == "" {
+		return ErrNotValidID
+	}
+
+	if i.Name == "" {
+		return ErrNotValidName
+	}
+
+	if i.Quantity <= 0 {
+		return ErrNotValidQuantity
+	}
+
+	if i.Unit == "" {
+		return ErrNotValidUnit
+	}
+
+	return nil
+}
 
 func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
-	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	if err != nil {
+	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
+		return err
+	} else if exists {
+		return ErrNotUniqueID
+	}
+
+	// Item validation
+	if err := ValidateItem(i); err != nil {
 		return err
 	}
 
-	// Uniqueness test (id)
-	for _, item := range inventoryItems {
-		if item.IngredientID == i.IngredientID {
-			return ErrNotUniqueID
-		}
-	}
-
-	// Appending item to the slice
-	inventoryItems = append(inventoryItems, i)
-
-	err = s.InventoryRepository.SaveItems(inventoryItems)
-	if err != nil {
+	if _, err := s.InventoryRepository.AddItem(i); err != nil {
 		return err
 	}
 
@@ -100,6 +112,38 @@ func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 	return data, nil
 }
 
+func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem) error {
+	// Existence test of old item
+	if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
+		return err
+	} else if !exists {
+		return ErrNoItem
+	}
+
+	// ! Debug log
+	log.Print(s.InventoryRepository.GetAllItems())
+
+	// Uniqueness test of new item (id)
+	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
+		return err
+	} else if exists {
+		return ErrNotUniqueID
+	}
+
+	// Item validation
+	if err := ValidateItem(i); err != nil {
+		return err
+	}
+
+	// Item updating in repo
+	err := s.InventoryRepository.RewriteItem(id, i)
+	if err != nil {
+		return nil
+	}
+
+	return nil
+}
+
 func (s *inventoryService) DeleteInventoryItem(id string) error {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
 	if err != nil {
@@ -123,7 +167,10 @@ func (s *inventoryService) DeleteInventoryItem(id string) error {
 		return ErrNoItem
 	}
 
-	s.InventoryRepository.SaveItems(inventoryItems)
+	err = s.InventoryRepository.SaveItems(inventoryItems)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

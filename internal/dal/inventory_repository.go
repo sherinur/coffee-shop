@@ -15,6 +15,8 @@ type InventoryRepository interface {
 	GetAllItems() ([]models.InventoryItem, error)
 	GetItemById(id string) (models.InventoryItem, error)
 	SaveItems(inventoryItems []models.InventoryItem) error
+	ItemExists(i models.InventoryItem) (bool, error)
+	RewriteItem(id string, newItem models.InventoryItem) error
 }
 
 type inventoryRepository struct {
@@ -26,7 +28,6 @@ func NewInventoryRepository(filePath string) *inventoryRepository {
 }
 
 func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryItem, error) {
-	// TODO: Marshal item to JSON and append to the file inventory.json (ioutil.WriteFile, 0644)
 	items, err := r.GetAllItems()
 	if err != nil {
 		return models.InventoryItem{}, err
@@ -88,6 +89,27 @@ func (r *inventoryRepository) GetItemById(id string) (models.InventoryItem, erro
 	return models.InventoryItem{}, errors.New("item not found")
 }
 
+func (r *inventoryRepository) RewriteItem(id string, newItem models.InventoryItem) error {
+	items, err := r.GetAllItems()
+	if err != nil {
+		return err
+	}
+
+	for i, item := range items {
+		if item.IngredientID == id {
+			items[i] = newItem
+			break
+		}
+	}
+
+	err = r.SaveItems(items)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) error {
 	// Checking the existence of a directory for a file
 	dir := filepath.Dir(r.filePath)
@@ -121,4 +143,19 @@ func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) e
 	}
 
 	return nil
+}
+
+func (r *inventoryRepository) ItemExists(i models.InventoryItem) (bool, error) {
+	inventoryItems, err := r.GetAllItems()
+	if err != nil {
+		return false, err
+	}
+
+	for _, item := range inventoryItems {
+		if item.IngredientID == i.IngredientID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
