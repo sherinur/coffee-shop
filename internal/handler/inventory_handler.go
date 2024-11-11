@@ -144,22 +144,52 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to update the inventory item by id.
+	if r.Body == nil {
+		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+	defer r.Body.Close()
+
+	itemId := r.PathValue("id")
+	if len(itemId) == 0 {
+		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
+	}
+
+	var item models.InventoryItem
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&item); err != nil {
+		WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		return
+	}
+
+	err := h.InventoryService.UpdateInventoryItem(itemId, item)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			return
+		default:
+			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be INVENTORY ITEM updating by id"))
 }
 
 func (h *inventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Request) {
 	itemId := r.PathValue("id")
 	if len(itemId) == 0 {
 		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
 	}
 
 	err := h.InventoryService.DeleteInventoryItem(itemId)
 	if err != nil {
 		switch err {
 		case service.ErrNoItem:
-			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id %s not found", itemId), w, r)
+			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
 			return
 		default:
 			WriteErrorResponse(http.StatusInternalServerError, err, w, r)

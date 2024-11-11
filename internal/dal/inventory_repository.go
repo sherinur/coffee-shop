@@ -16,6 +16,7 @@ type InventoryRepository interface {
 	GetAllItems() ([]models.InventoryItem, error)
 	GetItemById(id string) (models.InventoryItem, error)
 	SaveItems(inventoryItems []models.InventoryItem) error
+	ItemExists(i models.InventoryItem) (bool, error)
 }
 
 type inventoryRepository struct {
@@ -27,7 +28,6 @@ func NewInventoryRepository(filePath string) *inventoryRepository {
 }
 
 func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryItem, error) {
-	// TODO: Marshal item to JSON and append to the file inventory.json (ioutil.WriteFile, 0644)
 	items, err := r.GetAllItems()
 	if err != nil {
 		return models.InventoryItem{}, err
@@ -122,4 +122,20 @@ func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) e
 	}
 
 	return nil
+}
+
+func (r *inventoryRepository) ItemExists(i models.InventoryItem) (bool, error) {
+	inventoryItems, err := r.GetAllItems()
+	if err != nil {
+		return false, err
+	}
+
+	// Uniqueness test (id)
+	for _, item := range inventoryItems {
+		if item.IngredientID == i.IngredientID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
