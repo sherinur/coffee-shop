@@ -119,6 +119,17 @@ func RemoveValue(records [][]string, index int) [][]string {
 	return append(records[:index], records[index+1:]...)
 }
 
+func DirExists(path string) error {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func CustomUsage() {
 	fmt.Println(`Coffee Shop Management System
 
@@ -149,6 +160,7 @@ func ValidatePort(port string) error {
 }
 
 func ValidateDir(dir string) error {
+	err := CreateDir(dir)
 	// Check if the path exists
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {

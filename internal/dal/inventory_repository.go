@@ -2,6 +2,8 @@ package dal
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 	"os"
@@ -41,9 +43,6 @@ func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryI
 }
 
 func (r *inventoryRepository) GetAllItems() ([]models.InventoryItem, error) {
-	// TODO: open and read file.  return error if file is not found
-	// TODO: decode  json and return slice of items
-
 	var inventoryItems []models.InventoryItem
 
 	exists, err := utils.FileExists(r.filePath)
@@ -51,7 +50,7 @@ func (r *inventoryRepository) GetAllItems() ([]models.InventoryItem, error) {
 		return inventoryItems, err
 	}
 	if !exists {
-		return inventoryItems, nil // Return empty slice if file doesn't exist
+		return inventoryItems, nil
 	}
 
 	file, err := os.Open(r.filePath)
@@ -62,6 +61,10 @@ func (r *inventoryRepository) GetAllItems() ([]models.InventoryItem, error) {
 
 	decoder := json.NewDecoder(file)
 
+	if stat, _ := file.Stat(); stat.Size() == 0 {
+		return inventoryItems, nil
+	}
+
 	err = decoder.Decode(&inventoryItems)
 	if err != nil {
 		return inventoryItems, err
@@ -71,8 +74,6 @@ func (r *inventoryRepository) GetAllItems() ([]models.InventoryItem, error) {
 }
 
 func (r *inventoryRepository) GetItemById(id string) (models.InventoryItem, error) {
-	var inventoryItem models.InventoryItem
-	// TODO: Implement GetItemById() logic
 	items, err := r.GetAllItems()
 	if err != nil {
 		return models.InventoryItem{}, err
@@ -83,26 +84,58 @@ func (r *inventoryRepository) GetItemById(id string) (models.InventoryItem, erro
 			return item, nil
 		}
 	}
-	return inventoryItem, nil
+
+	return models.InventoryItem{}, errors.New("item not found")
 }
 
 func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) error {
-	// TODO: Marshal items to JSON and write new file(ioutil.WriteFile, 0644)
-
+	// Checking the existence of a directory for a file
 	dir := filepath.Dir(r.filePath)
 	err := utils.CreateDir(dir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create directory for file %s: %w", dir, err)
 	}
 
-	jsonData, err := json.MarshalIndent(inventoryItems, "", " ")
+	// Checking file write permissions
+	exists, err := utils.FileExists(r.filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking if file exists: %w", err)
 	}
 
-	err = os.WriteFile(r.filePath, jsonData, 0o644)
+	if !exists {
+		// If the file does not exist, create it
+		err := utils.CreateFile(r.filePath)
+		if err != nil {
+			return fmt.Errorf("error creating file %s: %w", r.filePath, err)
+		}
+	}
+
+	// Opening a file for recording
+	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open file %s for writing: %w", r.filePath, err)
+	}
+	defer file.Close()
+
+	// Checking for file emptiness before writing
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to get file stat: %w", err)
+	}
+	if stat.Size() == 0 {
+		inventoryItems = []models.InventoryItem{}
+	}
+
+	// // Converting data to JSON format
+	jsonData, err := json.MarshalIndent(inventoryItems, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling inventory items: %w", err)
+	}
+
+	// Writing data to a file
+	_, err = file.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("failed to write data to file %s: %w", r.filePath, err)
 	}
 
 	return nil
