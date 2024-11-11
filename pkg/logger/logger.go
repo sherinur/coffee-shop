@@ -19,30 +19,48 @@ type iLogger interface {
 }
 
 type Logger struct {
-	debugMode bool
+	debugMode    bool
+	bracketsMode bool
 }
 
-func New(debugMode bool) *Logger {
+func NewLogger(debugMode bool, bracketsMode bool) *Logger {
 	return &Logger{
-		debugMode: debugMode,
+		debugMode:    debugMode,
+		bracketsMode: bracketsMode,
 	}
 }
 
-func (l *Logger) PrintfInfoMsg(mes string, args ...interface{}) {
+func printfMsg(level string, mes string, args ...interface{}) {
+	log.Printf(level+" "+mes, args...)
+}
+
+func (l *Logger) PrintInfoMsg(mes string, args ...interface{}) {
+	if l.bracketsMode {
+		printfMsg("[INFO]", mes, args...)
+		return
+	}
 	slog.Info(mes, args...)
 }
 
-func (l *Logger) PrintfDebugMsg(mes string, args ...interface{}) {
+func (l *Logger) PrintDebugMsg(mes string, args ...interface{}) {
 	if l.debugMode {
-		slog.Debug(mes, args...)
+		printfMsg("[DEBUG]", mes, args...)
 	}
 }
 
-func (l *Logger) PrintfErrorMsg(mes string, args ...interface{}) {
+func (l *Logger) PrintErrorMsg(mes string, args ...interface{}) {
+	if l.bracketsMode {
+		printfMsg("[ERROR]", mes, args...)
+		return
+	}
 	slog.Error(mes, args...)
 }
 
-func (l *Logger) PrintfWarnMsg(mes string, args ...interface{}) {
+func (l *Logger) PrintWarnMsg(mes string, args ...interface{}) {
+	if l.bracketsMode {
+		printfMsg("[WARN]", mes, args...)
+		return
+	}
 	slog.Warn(mes, args...)
 }
 

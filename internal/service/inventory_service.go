@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"errors"
-
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )

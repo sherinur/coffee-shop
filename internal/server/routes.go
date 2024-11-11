@@ -2,12 +2,11 @@ package server
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
+	"log"
+	"net/http"
 )
 
 func (s *Server) registerRoutes() {
@@ -36,7 +35,7 @@ func (s *Server) registerRoutes() {
 		log.Fatal("Failed to create inventory service")
 	}
 
-	inventoryHandler := handler.NewInventoryHandler(inventoryService)
+	inventoryHandler := handler.NewInventoryHandler(inventoryService, s.logger)
 	if inventoryHandler == nil {
 		log.Fatal("Failed to create inventory handler")
 	}
@@ -72,8 +71,7 @@ func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.logger.PrintfInfoMsg(fmt.Sprintf("Request %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr))
-
+		s.logger.PrintInfoMsg(fmt.Sprintf("Request %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr))
 		if !allowedMethods[r.Method] {
 			return
 		}
