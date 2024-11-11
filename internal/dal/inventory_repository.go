@@ -17,6 +17,7 @@ type InventoryRepository interface {
 	GetItemById(id string) (models.InventoryItem, error)
 	SaveItems(inventoryItems []models.InventoryItem) error
 	ItemExists(i models.InventoryItem) (bool, error)
+	RewriteItem(id string, newItem models.InventoryItem) error
 }
 
 type inventoryRepository struct {
@@ -89,6 +90,27 @@ func (r *inventoryRepository) GetItemById(id string) (models.InventoryItem, erro
 	return models.InventoryItem{}, errors.New("item not found")
 }
 
+func (r *inventoryRepository) RewriteItem(id string, newItem models.InventoryItem) error {
+	items, err := r.GetAllItems()
+	if err != nil {
+		return err
+	}
+
+	for i, item := range items {
+		if item.IngredientID == id {
+			items[i] = newItem
+			break
+		}
+	}
+
+	err = r.SaveItems(items)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *inventoryRepository) SaveItems(inventoryItems []models.InventoryItem) error {
 	// Checking the existence of a directory for a file
 	dir := filepath.Dir(r.filePath)
@@ -130,7 +152,6 @@ func (r *inventoryRepository) ItemExists(i models.InventoryItem) (bool, error) {
 		return false, err
 	}
 
-	// Uniqueness test (id)
 	for _, item := range inventoryItems {
 		if item.IngredientID == i.IngredientID {
 			return true, nil

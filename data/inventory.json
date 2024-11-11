@@ -1,20 +1,20 @@
 [
  {
-  "ingredient_id": "prezik",
-  "name": "Gandonius",
-  "quantity": 500,
-  "unit": "shots"
+  "ingredient_id": "ozbek",
+  "name": "london",
+  "quantity": 12312,
+  "unit": "69"
  },
  {
-  "ingredient_id": "milk",
-  "name": "Cold milk",
-  "quantity": 500,
-  "unit": "milk"
+  "ingredient_id": "kazakh",
+  "name": "london",
+  "quantity": 312,
+  "unit": "69"
  },
  {
-  "ingredient_id": "milka",
-  "name": "",
-  "quantity": 500,
-  "unit": "milk"
+  "ingredient_id": "ozbekk",
+  "name": "london",
+  "quantity": 12312,
+  "unit": "69"
  }
 ]

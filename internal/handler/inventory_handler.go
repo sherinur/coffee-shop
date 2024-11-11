@@ -65,6 +65,7 @@ func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *htt
 }
 
 func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Request) {
+	// TODO: Fix error of `{"error": "EOF"}`
 	if r.Body == nil {
 		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
@@ -85,6 +86,9 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 		switch err {
 		case service.ErrNotUniqueID:
 			WriteErrorResponse(http.StatusConflict, err, w, r)
+			return
+		case service.ErrNotValidID, service.ErrNotValidName, service.ErrNotValidQuantity, service.ErrNotValidUnit:
+			WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		default:
 			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
@@ -168,6 +172,9 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 		switch err {
 		case service.ErrNoItem:
 			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			return
+		case service.ErrNotUniqueID:
+			WriteErrorResponse(http.StatusBadRequest, fmt.Errorf("item with id '%s' not unique", itemId), w, r)
 			return
 		default:
 			WriteErrorResponse(http.StatusInternalServerError, err, w, r)

@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"log"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -111,32 +112,33 @@ func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 	return data, nil
 }
 
-func (s *inventoryService) UpdateInventoryItem(id string, item models.InventoryItem) error {
-	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	if err != nil {
-		if err.Error() == "EOF" {
-			return ErrNoItem
-		}
+func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem) error {
+	// Existence test of old item
+	if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
 		return err
-	}
-
-	// updating the slice
-	isFound := false
-	for i, item := range inventoryItems {
-		if item.IngredientID == id {
-			inventoryItems[i] = item
-			isFound = true
-			break
-		}
-	}
-
-	if !isFound {
+	} else if !exists {
 		return ErrNoItem
 	}
 
-	err = s.InventoryRepository.SaveItems(inventoryItems)
-	if err != nil {
+	// ! Debug log
+	log.Print(s.InventoryRepository.GetAllItems())
+
+	// Uniqueness test of new item (id)
+	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
 		return err
+	} else if exists {
+		return ErrNotUniqueID
+	}
+
+	// Item validation
+	if err := ValidateItem(i); err != nil {
+		return err
+	}
+
+	// Item updating in repo
+	err := s.InventoryRepository.RewriteItem(id, i)
+	if err != nil {
+		return nil
 	}
 
 	return nil
