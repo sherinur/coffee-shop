@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
+	"hot-coffee/pkg/logger"
 )
 
 type InventoryHandler interface {
@@ -17,57 +17,66 @@ type InventoryHandler interface {
 	GetInventoryItem(w http.ResponseWriter, r *http.Request)
 	UpdateInventoryItem(w http.ResponseWriter, r *http.Request)
 	DeleteInventoryItem(w http.ResponseWriter, r *http.Request)
+	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
+	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
+	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)
 }
 
 type inventoryHandler struct {
 	InventoryService service.InventoryService
+	logger           *logger.Logger
 }
 
-func NewInventoryHandler(s service.InventoryService) *inventoryHandler {
-	return &inventoryHandler{InventoryService: s}
+func NewInventoryHandler(s service.InventoryService, l *logger.Logger) *inventoryHandler {
+	return &inventoryHandler{InventoryService: s, logger: l}
 }
 
-func WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
 
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(jsonResponse)
 	if err != nil {
-		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 	}
 }
 
-func WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
 
 	w.Header().Set("Content-Type", "application/json")
 	formattedJSON, err := json.MarshalIndent(jsonResponse, "", " ")
 	if err != nil {
-		WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		return
 	}
 
 	w.Write(formattedJSON)
 }
 
-func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
 	// TODO: if its statusCode == 500 -> add ERROR log
 	// TODO: in other cases 		  -> print DEBUG log
 	// TODO: find case to add WARNING log (высосать из пальца)
 
 	switch statusCode {
 	case http.StatusInternalServerError:
-		slog.Error(err.Error()) // example
-	}
+		h.logger.PrintErrorMsg(err.Error())
+	case http.StatusBadRequest,
+		http.StatusNotFound,
+		http.StatusUnsupportedMediaType,
+		http.StatusConflict:
 
+		h.logger.PrintDebugMsg(err.Error())
+	}
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
-	WriteJSONResponse(statusCode, errorJSON, w, r)
+	h.WriteJSONResponse(statusCode, errorJSON, w, r)
 }
 
 func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Request) {
 	// TODO: Fix error of `{"error": "EOF"}`
 	if r.Body == nil {
-		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
 	defer r.Body.Close()
@@ -75,28 +84,27 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 	var item models.InventoryItem
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&item); err != nil {
-		WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
 
-	// TODO: Write debug log here
+	h.logger.PrintDebugMsg("Adding new inventory item: %+v", item)
 
 	err := h.InventoryService.AddInventoryItem(item)
 	if err != nil {
 		switch err {
 		case service.ErrNotUniqueID:
-			WriteErrorResponse(http.StatusConflict, err, w, r)
-			return
-		case service.ErrNotValidID, service.ErrNotValidName, service.ErrNotValidQuantity, service.ErrNotValidUnit:
-			WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			h.WriteErrorResponse(http.StatusConflict, err, w, r)
 			return
 		default:
-			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
 
-	WriteJSONResponse(http.StatusCreated, item, w, r)
+	h.logger.PrintInfoMsg("Successfully added new inventory item: %+v", item)
+
+	h.WriteJSONResponse(http.StatusCreated, item, w, r)
 }
 
 // 200 OK — запрос был успешно обработан.
@@ -109,12 +117,13 @@ func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		switch err {
 		default:
-			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
 
-	// TODO: Write debug log here
+	h.logger.PrintDebugMsg("Retrieved inventory items")
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
@@ -122,7 +131,7 @@ func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Requ
 func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Request) {
 	itemId := r.PathValue("id")
 	if len(itemId) == 0 {
-		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
 		return
 	}
 
@@ -130,40 +139,40 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		switch err {
 		case service.ErrNoItem:
-			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
 			return
 		default:
-			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
 
-	// TODO: Write debug log here
+	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
-		// TODO: Print error log here
+		h.logger.PrintErrorMsg("Failed to write response: %v", err)
 	}
 }
 
 func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
-		WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
 	defer r.Body.Close()
 
 	itemId := r.PathValue("id")
 	if len(itemId) == 0 {
-		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
 		return
 	}
 
 	var item models.InventoryItem
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&item); err != nil {
-		WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
 
@@ -171,13 +180,13 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		switch err {
 		case service.ErrNoItem:
-			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
 			return
 		case service.ErrNotUniqueID:
-			WriteErrorResponse(http.StatusBadRequest, fmt.Errorf("item with id '%s' not unique", itemId), w, r)
+			h.WriteErrorResponse(http.StatusBadRequest, fmt.Errorf("item with id '%s' not unique", itemId), w, r)
 			return
 		default:
-			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
@@ -188,22 +197,21 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 func (h *inventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Request) {
 	itemId := r.PathValue("id")
 	if len(itemId) == 0 {
-		WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
 		return
 	}
-
 	err := h.InventoryService.DeleteInventoryItem(itemId)
 	if err != nil {
 		switch err {
 		case service.ErrNoItem:
-			WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
 			return
 		default:
-			WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
 
-	// TODO: Write debug log here
+	h.logger.PrintDebugMsg("Inventory item with ID: %s successfully deleted", itemId)
 	w.WriteHeader(http.StatusNoContent)
 }

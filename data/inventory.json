@@ -1,20 +1,32 @@
 [
  {
-  "ingredient_id": "ozbek",
-  "name": "london",
-  "quantity": 12312,
-  "unit": "69"
+  "ingredient_id": "espresso_shot",
+  "name": "Espresso Shot",
+  "quantity": 495,
+  "unit": "shots"
  },
  {
-  "ingredient_id": "kazakh",
-  "name": "london",
-  "quantity": 312,
-  "unit": "69"
+  "ingredient_id": "milk",
+  "name": "Farm milk",
+  "quantity": 1000,
+  "unit": "ml"
  },
  {
-  "ingredient_id": "ozbekk",
-  "name": "london",
-  "quantity": 12312,
-  "unit": "69"
+  "ingredient_id": "flour",
+  "name": "Flour",
+  "quantity": 10000,
+  "unit": "g"
+ },
+ {
+  "ingredient_id": "blueberries",
+  "name": "Blueberries",
+  "quantity": 2000,
+  "unit": "g"
+ },
+ {
+  "ingredient_id": "strawberries",
+  "name": "Strawberries",
+  "quantity": 200,
+  "unit": "g"
  }
 ]
