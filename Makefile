@@ -14,6 +14,7 @@ run: build
 clean:
 	@echo "Cleaning up..."
 	go mod tidy
+	gofumpt -l -w .
 	rm data -rf
 	rm -f $(BINARY_NAME)
 

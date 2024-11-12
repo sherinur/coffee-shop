@@ -6,16 +6,19 @@ import (
 
 type OrderRepository interface {
 	AddOrder(order models.Order) (models.Order, error)
-	DeleteOrderById(id string) (models.Order, error)
-	GetOrderById(id string) (models.Order, error)
 	GetAllOrders() ([]models.Order, error)
+	GetOrderById(id string) (models.Order, error)
+	DeleteOrderById(id string) (models.Order, error)
+	SaveOrders(orders []models.Order) error
+	OrderExists(o models.Order) (bool, error)
+	RewriteOrder(id string, newOrder models.Order) error
 }
 
 type orderRepository struct {
 	filePath string
 }
 
-func NewOrderRepository(filePath string) OrderRepository {
+func NewOrderRepository(filePath string) *orderRepository {
 	return &orderRepository{filePath: filePath}
 }
 
@@ -25,11 +28,11 @@ func (r *orderRepository) AddOrder(order models.Order) (models.Order, error) {
 	return order, nil
 }
 
-func (r *orderRepository) DeleteOrderById(id string) (models.Order, error) {
-	// TODO: Get all orders, find order by id and delete it
-	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644
-	// TODO: Return the deleted order
-	return models.Order{}, nil
+func (r *orderRepository) GetAllOrders() ([]models.Order, error) {
+	// TODO: open and read file.  return error if file is not found
+	// TODO: decode  json and return slice of orders
+
+	return []models.Order{}, nil
 }
 
 func (r *orderRepository) GetOrderById(id string) (models.Order, error) {
@@ -38,9 +41,25 @@ func (r *orderRepository) GetOrderById(id string) (models.Order, error) {
 	return models.Order{}, nil
 }
 
-func (r *orderRepository) GetAllOrders() ([]models.Order, error) {
-	// TODO: open and read file.  return error if file is not found
-	// TODO: decode  json and return slice of orders
+func (r *orderRepository) DeleteOrderById(id string) (models.Order, error) {
+	// TODO: Get all orders, find order by id and delete it
+	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	// TODO: Return the deleted order
+	return models.Order{}, nil
+}
 
-	return []models.Order{}, nil
+func (r *orderRepository) SaveOrders(orders []models.Order) error {
+	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	return nil
+}
+
+func (r *orderRepository) OrderExists(o models.Order) (bool, error) {
+	// TODO: Get all orders and check if the order exists
+	return false, nil
+}
+
+func (r *orderRepository) RewriteOrder(id string, newOrder models.Order) error {
+	// TODO: Get all orders, find order by id and replace it with newOrder
+	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	return nil
 }

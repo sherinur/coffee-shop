@@ -17,6 +17,7 @@ type InventoryHandler interface {
 	GetInventoryItem(w http.ResponseWriter, r *http.Request)
 	UpdateInventoryItem(w http.ResponseWriter, r *http.Request)
 	DeleteInventoryItem(w http.ResponseWriter, r *http.Request)
+
 	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)

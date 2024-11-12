@@ -1,62 +1,118 @@
 package handler
 
-// type OrderHandler interface {
-// 	CreateOrder(w http.ResponseWriter, r *http.Request)
-// 	RetrieveOrders(w http.ResponseWriter, r *http.Request)
-// 	RetrieveOrder(w http.ResponseWriter, r *http.Request)
-// 	UpdateOrder(w http.ResponseWriter, r *http.Request)
-// 	DeleteOrder(w http.ResponseWriter, r *http.Request)
-// 	CloseOrder(w http.ResponseWriter, r *http.Request)
-// }
+import (
+	"encoding/json"
+	"net/http"
 
-// type orderHandler struct {
-// 	OrderService *service.OrderService
-// }
+	"hot-coffee/internal/service"
+	"hot-coffee/models"
+	"hot-coffee/pkg/logger"
+)
 
-// func NewOrderHandler(s *service.OrderService) OrderHandler {
-// 	return &orderHandler{OrderService: s}
-// }
+type OrderHandler interface {
+	CreateOrder(w http.ResponseWriter, r *http.Request)
+	RetrieveOrders(w http.ResponseWriter, r *http.Request)
+	RetrieveOrder(w http.ResponseWriter, r *http.Request)
+	UpdateOrder(w http.ResponseWriter, r *http.Request)
+	DeleteOrder(w http.ResponseWriter, r *http.Request)
+	CloseOrder(w http.ResponseWriter, r *http.Request)
 
-// func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-// 	// TODO: implement logic to Create a new order.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be ORDER CREATING"))
-// }
+	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
+	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
+	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)
+}
 
-// func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
-// 	// TODO: implement logic to Retrieve all orders.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be Retrieving all orders."))
-// }
+type orderHandler struct {
+	OrderService service.OrderService
+	logger       *logger.Logger
+}
 
-// func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
-// 	orderId := r.PathValue("id")
+func NewOrderHandler(s service.OrderService, l *logger.Logger) *orderHandler {
+	return &orderHandler{OrderService: s, logger: l}
+}
 
-// 	// TODO: implement logic to Retrieve a specific order by ID.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be Retrieve a specific order by ID: " + orderId))
-// }
+func (h *orderHandler) WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(statusCode)
 
-// func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-// 	orderId := r.PathValue("id")
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(jsonResponse)
+	if err != nil {
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+	}
+}
 
-// 	// TODO: implement logic to Update an existing order by ID.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be Update an existing order by ID: " + orderId))
-// }
+func (h *orderHandler) WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(statusCode)
 
-// func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-// 	orderId := r.PathValue("id")
+	w.Header().Set("Content-Type", "application/json")
+	formattedJSON, err := json.MarshalIndent(jsonResponse, "", " ")
+	if err != nil {
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		return
+	}
 
-// 	// TODO: implement logic to Delete an order by ID.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be Delete an order by ID: " + orderId))
-// }
+	w.Write(formattedJSON)
+}
 
-// func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-// 	orderId := r.PathValue("id")
+func (h *orderHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
+	// TODO: if its statusCode == 500 -> add ERROR log
+	// TODO: in other cases 		  -> print DEBUG log
+	// TODO: find case to add WARNING log (высосать из пальца)
 
-// 	// TODO: implement logic to Close an order by ID.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write([]byte("There will be Close an order by ID: " + orderId))
-// }
+	switch statusCode {
+	case http.StatusInternalServerError:
+		h.logger.PrintErrorMsg(err.Error())
+	case http.StatusBadRequest,
+		http.StatusNotFound,
+		http.StatusUnsupportedMediaType,
+		http.StatusConflict:
+
+		h.logger.PrintDebugMsg(err.Error())
+	}
+	errorJSON := &models.ErrorResponse{Error: err.Error()}
+	h.WriteJSONResponse(statusCode, errorJSON, w, r)
+}
+
+func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	// TODO: implement logic to Create a new order.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be ORDER CREATING"))
+}
+
+func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
+	// TODO: implement logic to Retrieve all orders.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be Retrieving all orders."))
+}
+
+func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
+	orderId := r.PathValue("id")
+
+	// TODO: implement logic to Retrieve a specific order by ID.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be Retrieve a specific order by ID: " + orderId))
+}
+
+func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+	orderId := r.PathValue("id")
+
+	// TODO: implement logic to Update an existing order by ID.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be Update an existing order by ID: " + orderId))
+}
+
+func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
+	orderId := r.PathValue("id")
+
+	// TODO: implement logic to Delete an order by ID.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be Delete an order by ID: " + orderId))
+}
+
+func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
+	orderId := r.PathValue("id")
+
+	// TODO: implement logic to Close an order by ID.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("There will be Close an order by ID: " + orderId))
+}
