@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"hot-coffee/internal/dal"
@@ -45,6 +46,25 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /inventory/{id}", inventoryHandler.GetInventoryItem)
 	s.mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.UpdateInventoryItem)
 	s.mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
+
+	// Menu
+	menuRepository := dal.NewMenuRepository(s.config.data_directory + "/menu.json")
+	if menuRepository == nil {
+		log.Fatal("Failed to create menu repository")
+	}
+
+	menuService := service.NewMenuService(menuRepository)
+	if menuService == nil {
+		log.Fatal("Failed to create menu service")
+	}
+
+	menuHandler := handler.NewMenuHandler(menuService, s.logger)
+	if menuHandler == nil {
+		log.Fatal("Failed to create  handler")
+	}
+
+	s.mux.HandleFunc("GET /menu", menuHandler.GetMenuItems)
+	s.mux.HandleFunc("GET /menu/{id}", menuHandler.GetMenuItem)
 
 	// Orders
 	orderRepository := dal.NewOrderRepository(s.config.data_directory + "/orders.json")
