@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -26,9 +27,24 @@ func NewMenuService(repo dal.MenuRepository) *menuService {
 	return &menuService{MenuRepository: repo}
 }
 
+// ValidateMenuItem validates the fields of a MenuItem.
+// Returns nil if the item is valid.
+// The following errors may be returned:
+// - ErrNotValidID if the ID is empty.
+// - ErrIDContainsSpace if the ID contains spaces.
+// - ErrNotValidName if the Name is empty.
+// - ErrNotValidDescription if the Description is empty.
+// - ErrNotValidPrice if the Price is zero or negative.
+// - ErrNotValidIngredients if the Ingredients list is nil or empty.
+// - ErrInvalidIngredientID if any ingredient has an invalid ID (empty or contains spaces).
+// - ErrInvalidIngredientQty if any ingredient has a quantity less than 1.
 func ValidateMenuItem(i models.MenuItem) error {
 	if i.ID == "" {
 		return ErrNotValidID
+	}
+
+	if strings.Contains(i.ID, " ") {
+		return ErrIDContainsSpace
 	}
 
 	if i.Name == "" {
@@ -43,13 +59,30 @@ func ValidateMenuItem(i models.MenuItem) error {
 		return ErrNotValidPrice
 	}
 
-	if i.Ingredients == nil {
+	if i.Ingredients == nil || len(i.Ingredients) < 1 {
 		return ErrNotValidIngredients
+	}
+
+	for _, ingredient := range i.Ingredients {
+		if ingredient.IngredientID == "" {
+			return ErrInvalidIngredientID
+		}
+		if strings.Contains(ingredient.IngredientID, " ") {
+			return ErrInvalidIngredientID
+		}
+		if ingredient.Quantity < 1 {
+			return ErrInvalidIngredientQty
+		}
 	}
 
 	return nil
 }
 
+// AddMenuItem adds a new menu item to the repository.
+// Returns nil if the addition is successful.
+// The following errors may be returned:
+// - ErrNotUniqueID if the item with the same ID already exists.
+// - An error if there is a validation issue or a failure when adding the item to the repository.
 func (s *menuService) AddMenuItem(i models.MenuItem) error {
 	if exists, err := s.MenuRepository.MenuItemExists(i); err != nil {
 		return err
