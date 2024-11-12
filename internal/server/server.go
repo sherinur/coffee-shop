@@ -1,8 +1,9 @@
 package server
 
 import (
-	"hot-coffee/pkg/logger"
 	"net/http"
+
+	"hot-coffee/pkg/logger"
 )
 
 type Server struct {
@@ -15,7 +16,7 @@ type Server struct {
 func New(config *Config) *Server {
 	s := &Server{
 		config: config,
-		logger: logger.NewLogger(true, false),
+		logger: logger.NewLogger(true, true),
 		mux:    http.NewServeMux(),
 	}
 

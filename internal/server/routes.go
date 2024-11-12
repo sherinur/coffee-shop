@@ -2,11 +2,12 @@ package server
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
-	"log"
-	"net/http"
 )
 
 func (s *Server) registerRoutes() {

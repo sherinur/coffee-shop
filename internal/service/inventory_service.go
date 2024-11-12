@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"log"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -119,9 +118,6 @@ func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem
 	} else if !exists {
 		return ErrNoItem
 	}
-
-	// ! Debug log
-	log.Print(s.InventoryRepository.GetAllItems())
 
 	// Uniqueness test of new item (id)
 	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {

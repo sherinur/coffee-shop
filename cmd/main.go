@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"hot-coffee/internal/server"
 	"os"
+
+	"hot-coffee/internal/server"
 
 	. "hot-coffee/internal/utils"
 )
