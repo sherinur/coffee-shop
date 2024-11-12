@@ -9,4 +9,6 @@ var (
 	ErrNotValidName     error = errors.New("ingredient name is not valid")
 	ErrNotValidQuantity error = errors.New("ingredient quantity is not valid")
 	ErrNotValidUnit     error = errors.New("ingredient unit is not valid")
+
+	ErrNotUniqueOrder error = errors.New("order ID must be unique")
 )

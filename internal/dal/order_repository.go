@@ -1,6 +1,12 @@
 package dal
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 )
 
@@ -23,14 +29,48 @@ func NewOrderRepository(filePath string) *orderRepository {
 }
 
 func (r *orderRepository) AddOrder(order models.Order) (models.Order, error) {
-	// TODO: getAllOrders and append new order
-	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		return models.Order{}, err
+	}
+
+	orders = append(orders, order)
+
+	err = r.SaveOrders(orders)
+	if err != nil {
+		return models.Order{}, err
+	}
+
 	return order, nil
 }
 
 func (r *orderRepository) GetAllOrders() ([]models.Order, error) {
-	// TODO: open and read file.  return error if file is not found
-	// TODO: decode  json and return slice of orders
+	orders := []models.InventoryItem{}
+
+	exists, err := utils.FileExists(r.filePath)
+	if err != nil {
+		return []models.Order{}, err
+	}
+	if !exists {
+		return []models.Order{}, nil
+	}
+
+	file, err := os.Open(r.filePath)
+	if err != nil {
+		return []models.Order{}, err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+
+	if utils.FileEmpty(file) {
+		return []models.Order{}, nil
+	}
+
+	err = decoder.Decode(&orders)
+	if err != nil {
+		return []models.Order{}, err
+	}
 
 	return []models.Order{}, nil
 }
@@ -49,12 +89,52 @@ func (r *orderRepository) DeleteOrderById(id string) (models.Order, error) {
 }
 
 func (r *orderRepository) SaveOrders(orders []models.Order) error {
-	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	// Checking the existence of a directory for a file
+	dir := filepath.Dir(r.filePath)
+	err := utils.CreateDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// Checking file write permissions
+	exists, err := utils.FileExists(r.filePath)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		// If the file does not exist, create it
+		err := utils.CreateFile(r.filePath)
+		if err != nil {
+			return fmt.Errorf("error creating file %s: %w", r.filePath, err)
+		}
+	}
+
+	jsonData, err := json.MarshalIndent(orders, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(r.filePath, jsonData, 0o644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (r *orderRepository) OrderExists(o models.Order) (bool, error) {
-	// TODO: Get all orders and check if the order exists
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		return false, err
+	}
+
+	for _, order := range orders {
+		if order.ID == o.ID {
+			return true, nil
+		}
+	}
+
 	return false, nil
 }
 

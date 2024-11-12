@@ -88,7 +88,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /orders/{id}", orderHandler.RetrieveOrder)
 	s.mux.HandleFunc("PUT /orders/{id}", orderHandler.UpdateOrder)
 	s.mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
-	s.mux.HandleFunc("POST	 /orders/{id}/close", orderHandler.CloseOrder)
+	s.mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
 }
 
 func (s *Server) RequestMiddleware(next http.Handler) http.Handler {

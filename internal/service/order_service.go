@@ -6,7 +6,7 @@ import (
 )
 
 type OrderService interface {
-	AddOrder(i models.Order) error
+	AddOrder(o models.Order) error
 	RetrieveOrders() ([]byte, error)
 	RetrieveOrder(id string) ([]byte, error)
 	UpdateOrder(id string, item models.Order) error
@@ -25,7 +25,33 @@ func NewOrderService(repo dal.OrderRepository) *orderService {
 	return &orderService{OrderRepository: repo}
 }
 
-func (s *orderService) AddOrder(i models.Order) error {
+func ValidateOrder(o models.Order) error {
+	// TODO: Define and implement validation rules for order
+	// TODO: Validate order items using ValidateOrderItems()
+	return nil
+}
+
+func ValidateOrderItems(items []models.OrderItem) error {
+	// TODO: Define and implement validation rules for order items
+	return nil
+}
+
+func (s *orderService) AddOrder(o models.Order) error {
+	if exists, err := s.OrderRepository.OrderExists(o); err != nil {
+		return err
+	} else if exists {
+		return ErrNotUniqueOrder
+	}
+
+	// Order validation
+	if err := ValidateOrder(o); err != nil {
+		return err
+	}
+
+	if _, err := s.OrderRepository.AddOrder(o); err != nil {
+		return err
+	}
+
 	// TODO: Validate the order
 	// TODO: Call AddOrder method from repository
 	return nil

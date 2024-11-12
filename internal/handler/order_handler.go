@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"hot-coffee/internal/service"
@@ -74,9 +75,36 @@ func (h *orderHandler) WriteErrorResponse(statusCode int, err error, w http.Resp
 }
 
 func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to Create a new order.
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be ORDER CREATING"))
+	if r.Body == nil {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+	defer r.Body.Close()
+
+	var order models.Order
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&order); err != nil {
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		return
+	}
+
+	h.logger.PrintDebugMsg("Creating new order: %+v", order)
+
+	err := h.OrderService.AddOrder(order)
+	if err != nil {
+		switch err {
+		case service.ErrNotUniqueOrder:
+			h.WriteErrorResponse(http.StatusConflict, err, w, r)
+			return
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	h.logger.PrintInfoMsg("Successfully created new order: %+v", order)
+
+	h.WriteJSONResponse(http.StatusCreated, order, w, r)
 }
 
 func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
