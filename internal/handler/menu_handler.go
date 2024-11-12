@@ -55,8 +55,6 @@ func (h *menuHandler) WriteJSONResponse(statusCode int, jsonResponse any, w http
 }
 
 func (h *menuHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
-	// TODO: if its statusCode == 500 -> add ERROR log
-	// TODO: in other cases 		  -> print DEBUG log
 	// TODO: find case to add WARNING log (высосать из пальца)
 
 	switch statusCode {
@@ -71,6 +69,40 @@ func (h *menuHandler) WriteErrorResponse(statusCode int, err error, w http.Respo
 	}
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
 	h.WriteJSONResponse(statusCode, errorJSON, w, r)
+}
+
+func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
+	// TODO: Fix error of `{"error": "EOF"}`
+	if r.Body == nil {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+	defer r.Body.Close()
+
+	var item models.MenuItem
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&item); err != nil {
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		return
+	}
+
+	h.logger.PrintDebugMsg("Adding new menu item: %+v", item)
+
+	err := h.MenuService.AddMenuItem(item)
+	if err != nil {
+		switch err {
+		case service.ErrNotUniqueID:
+			h.WriteErrorResponse(http.StatusConflict, err, w, r)
+			return
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	h.logger.PrintInfoMsg("Successfully added new menu item: %+v", item)
+
+	h.WriteJSONResponse(http.StatusCreated, item, w, r)
 }
 
 func (h *menuHandler) GetMenuItems(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +140,71 @@ func (h *menuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
+	h.logger.PrintDebugMsg("Retrieved menu item with ID: %s", itemId)
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
 		h.logger.PrintErrorMsg("Failed to write response: %v", err)
 	}
+}
+
+func (h *menuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+	defer r.Body.Close()
+
+	itemId := r.PathValue("id")
+	if len(itemId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
+	}
+
+	var item models.MenuItem
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&item); err != nil {
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		return
+	}
+
+	err := h.MenuService.UpdateMenuItem(itemId, item)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			return
+		case service.ErrNotUniqueID:
+			h.WriteErrorResponse(http.StatusBadRequest, fmt.Errorf("item with id '%s' not unique", itemId), w, r)
+			return
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *menuHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
+	itemId := r.PathValue("id")
+	if len(itemId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
+	}
+	err := h.MenuService.DeleteMenuItem(itemId)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
+			return
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	h.logger.PrintDebugMsg("Menu item with ID: %s successfully deleted", itemId)
+	w.WriteHeader(http.StatusNoContent)
 }

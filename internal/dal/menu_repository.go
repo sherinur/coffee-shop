@@ -3,7 +3,9 @@ package dal
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
@@ -27,7 +29,18 @@ func NewMenuRepository(filePath string) *menuRepository {
 }
 
 func (r *menuRepository) AddMenuItem(i models.MenuItem) (models.MenuItem, error) {
-	// TODO:AddMenuItem logic
+	items, err := r.GetAllMenuItems()
+	if err != nil {
+		return models.MenuItem{}, err
+	}
+
+	items = append(items, i)
+
+	err = r.SaveMenuItems(items)
+	if err != nil {
+		return models.MenuItem{}, err
+	}
+
 	return i, nil
 }
 
@@ -76,17 +89,73 @@ func (r *menuRepository) GetMenuItemById(id string) (models.MenuItem, error) {
 	return models.MenuItem{}, errors.New("item not found")
 }
 
+func (r *menuRepository) SaveMenuItems(menuItems []models.MenuItem) error {
+	// Checking the existence of a directory for a file
+	dir := filepath.Dir(r.filePath)
+	err := utils.CreateDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to create directory for file %s: %w", dir, err)
+	}
+
+	// Checking file write permissions
+	exists, err := utils.FileExists(r.filePath)
+	if err != nil {
+		return fmt.Errorf("error checking if file exists: %w", err)
+	}
+
+	if !exists {
+		// If the file does not exist, create it
+		err := utils.CreateFile(r.filePath)
+		if err != nil {
+			return fmt.Errorf("error creating file %s: %w", r.filePath, err)
+		}
+	}
+
+	jsonData, err := json.MarshalIndent(menuItems, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(r.filePath, jsonData, 0o644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *menuRepository) MenuItemExists(i models.MenuItem) (bool, error) {
-	// TODO:MenuItemExists logic
+	menuItems, err := r.GetAllMenuItems()
+	if err != nil {
+		return false, err
+	}
+
+	for _, item := range menuItems {
+		if item.ID == i.ID {
+			return true, nil
+		}
+	}
+
 	return false, nil
 }
 
 func (r *menuRepository) RewriteMenuItem(id string, newItem models.MenuItem) error {
-	// TODO:RewriteMenuItem logic
-	return nil
-}
+	items, err := r.GetAllMenuItems()
+	if err != nil {
+		return err
+	}
 
-func (r *menuRepository) SaveMenuItems(menuItems []models.MenuItem) error {
-	// TODO:RewriteMenuItem logic
+	for i, item := range items {
+		if item.ID == id {
+			items[i] = newItem
+			break
+		}
+	}
+
+	err = r.SaveMenuItems(items)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

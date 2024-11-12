@@ -57,8 +57,6 @@ func (h *inventoryHandler) WriteJSONResponse(statusCode int, jsonResponse any, w
 
 func (h *inventoryHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
 	// TODO: if its statusCode == 500 -> add ERROR log
-	// TODO: in other cases 		  -> print DEBUG log
-	// TODO: find case to add WARNING log (высосать из пальца)
 
 	switch statusCode {
 	case http.StatusInternalServerError:
