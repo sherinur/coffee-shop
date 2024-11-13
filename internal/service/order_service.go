@@ -36,6 +36,8 @@ func ValidateOrder(o models.Order) error {
 
 func ValidateOrderItems(items []models.OrderItem) error {
 	// TODO: Define and implement validation rules for order items
+
+	// TODO: Добавить правило чтобы не повторялись продукты в массиве (один ингредиент и количество сразу пишутся)
 	return nil
 }
 
@@ -93,9 +95,9 @@ func (s *orderService) RetrieveOrder(id string) ([]byte, error) {
 	return data, nil
 }
 
-func (s *orderService) UpdateOrder(id string, item models.Order) error {
+func (s *orderService) UpdateOrder(id string, order models.Order) error {
 	// TODO: Validate the order update
-	// TODO: Call RewriteOrder method from repository
+	// TODO: Call RewriteOrder method from repository ->  err := s.OrderRepository.RewriteOrder(id, order)
 	return nil
 }
 
@@ -105,8 +107,8 @@ func (s *orderService) DeleteOrder(id string) error {
 
 func (s *orderService) CloseOrder(id string) error {
 	// TODO: Когда заказ закрывается через /orders/{id}/close, система считает, что заказ выполнен, и обновляет инвентарь, вычитая количество ингредиентов, необходимых для его выполнения.
-	// TODO: После успешного вычитания ингредиентов заказ считается закрытым, и он больше не будет доступен для изменений.
-	// TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
+	// TODO: После успешного вычитания ингредиентов заказ считается закрытым( "status": "open", -> "status": "closed",), и он больше не будет доступен для изменений (Изменить Update, проверять статус closed or open).
+	// ? TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
 
 	// TODO: Call UpdateOrder or DeleteOrder from repository if needed
 	return nil

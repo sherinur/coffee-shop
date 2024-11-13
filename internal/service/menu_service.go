@@ -27,6 +27,7 @@ func NewMenuService(repo dal.MenuRepository) *menuService {
 	return &menuService{MenuRepository: repo}
 }
 
+// TODO: Добавить правило чтобы не повторялись ингредиенты в массиве (один ингредиент и количество сразу пишутся)
 // ValidateMenuItem validates the fields of a MenuItem.
 // Returns nil if the item is valid.
 // The following errors may be returned:

@@ -7,12 +7,12 @@ import (
 var (
 	ErrNoOrder error = errors.New("order not found")
 
-	ErrNotValidID       error = errors.New("ingredient id is not valid")
-	ErrNotUniqueID      error = errors.New("ingredient ID must be unique")
-	ErrNoItem           error = errors.New("item not found")
-	ErrNotValidName     error = errors.New("ingredient name is not valid")
-	ErrNotValidQuantity error = errors.New("ingredient quantity is not valid")
-	ErrNotValidUnit     error = errors.New("ingredient unit is not valid")
+	ErrNotValidIngredientID   error = errors.New("ingredient ID is not valid")
+	ErrNotUniqueID            error = errors.New("ingredient ID must be unique")
+	ErrNoItem                 error = errors.New("item not found")
+	ErrNotValidIngredientName error = errors.New("ingredient name is not valid")
+	ErrNotValidQuantity       error = errors.New("ingredient quantity is not valid")
+	ErrNotValidUnit           error = errors.New("ingredient unit is not valid")
 
 	ErrNotValidMenuID          error = errors.New("menu ID is not valid")
 	ErrNotUniqueMenuID         error = errors.New("menu ID must be unique")
