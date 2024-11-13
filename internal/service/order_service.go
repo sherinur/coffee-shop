@@ -15,7 +15,8 @@ type OrderService interface {
 }
 
 type orderService struct {
-	OrderRepository dal.OrderRepository
+	OrderRepository     dal.OrderRepository
+	InventoryRepository dal.InventoryRepository
 }
 
 func NewOrderService(repo dal.OrderRepository) *orderService {
