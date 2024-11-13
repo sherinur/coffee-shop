@@ -56,11 +56,24 @@ func ValidateMenuItem(i models.MenuItem) error {
 		return ErrNotValidPrice
 	}
 
-	if i.Ingredients == nil || len(i.Ingredients) < 1 {
-		return ErrNotValidIngredientID
+	err := ValidateMenuIngredient(i.Ingredients)
+	if err != nil {
+		return err
 	}
 
-	for _, ingredient := range i.Ingredients {
+	return nil
+}
+
+func ValidateMenuIngredient(i []models.MenuItemIngredient) error {
+	if i == nil || len(i) < 1 {
+		return ErrNotValidIngredints
+	}
+	for k, ingredient := range i {
+		for l, ingredient2 := range i {
+			if ingredient.IngredientID == ingredient2.IngredientID && k != l {
+				return ErrDuplicateMenuIngredients
+			}
+		}
 		if ingredient.IngredientID == "" || strings.Contains(ingredient.IngredientID, " ") {
 			return ErrNotValidIngredientID
 		}
@@ -69,7 +82,6 @@ func ValidateMenuItem(i models.MenuItem) error {
 			return ErrNotValidQuantity
 		}
 	}
-
 	return nil
 }
 
