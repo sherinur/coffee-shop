@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -26,9 +27,21 @@ func NewInventoryService(repo dal.InventoryRepository) *inventoryService {
 	return &inventoryService{InventoryRepository: repo}
 }
 
+// ValidateItem validates the fields of an InventoryItem.
+// Returns nil if the item is valid.
+// The following errors may be returned:
+// - ErrNotValidID if the IngredientID is empty.
+// - ErrIDContainsSpace if the IngredientID contains spaces.
+// - ErrNotValidName if the Name is empty.
+// - ErrNotValidQuantity if the Quantity is zero or negative.
+// - ErrNotValidUnit if the Unit is empty.
 func ValidateItem(i models.InventoryItem) error {
 	if i.IngredientID == "" {
 		return ErrNotValidID
+	}
+
+	if strings.Contains(i.IngredientID, " ") {
+		return ErrIDContainsSpace
 	}
 
 	if i.Name == "" {
@@ -46,6 +59,11 @@ func ValidateItem(i models.InventoryItem) error {
 	return nil
 }
 
+// AddInventoryItem adds a new inventory item to the repository.
+// Returns nil if the addition is successful.
+// The following errors may be returned:
+// - ErrNotUniqueID if the item with the same ID already exists.
+// - An error if there is a validation issue or a failure when adding the item to the repository.
 func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
 		return err
@@ -65,6 +83,10 @@ func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 	return nil
 }
 
+// RetrieveInventoryItems retrieves all inventory items from the repository.
+// Returns the items data in JSON format as a byte slice.
+// The following error may be returned:
+// - An error if there is a failure when retrieving items from the repository or when marshalling the data.
 func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
 	if err != nil {
@@ -79,6 +101,11 @@ func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
 	return data, nil
 }
 
+// RetrieveInventoryItem retrieves a single inventory item by its ID.
+// Returns the item data in JSON format as a byte slice if found.
+// The following errors may be returned:
+// - ErrNoItem if the item with the specified ID is not found.
+// - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
 func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
 	if err != nil {
@@ -148,6 +175,11 @@ func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem
 	return nil
 }
 
+// DeleteInventoryItem deletes an inventory item by its ID.
+// Returns nil if the deletion is successful.
+// The following errors may be returned:
+// - ErrNoItem if the item with the specified ID is not found.
+// - An error if there is a failure when retrieving or saving items in the repository.
 func (s *inventoryService) DeleteInventoryItem(id string) error {
 	inventoryItems, err := s.InventoryRepository.GetAllItems()
 	if err != nil {

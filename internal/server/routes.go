@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"hot-coffee/internal/dal"
@@ -56,6 +55,7 @@ func (s *Server) registerRoutes() {
 		s.logger.PrintWarnMsg("Failed to create inventory handler")
 	}
 
+	// Inventory routes
 	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
 	s.mux.HandleFunc("GET /inventory", inventoryHandler.GetInventoryItems)
 	s.mux.HandleFunc("GET /inventory/{id}", inventoryHandler.GetInventoryItem)
@@ -63,23 +63,27 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
 	// Menu
-	menuRepository := dal.NewMenuRepository(s.config.data_directory + "/menu.json")
+	menuRepository := dal.NewMenuRepository(s.config.data_directory + "/menu_items.json")
 	if menuRepository == nil {
-		log.Fatal("Failed to create menu repository")
+		s.logger.PrintErrorMsg("Failed to create menu repository")
 	}
 
 	menuService := service.NewMenuService(menuRepository)
 	if menuService == nil {
-		log.Fatal("Failed to create menu service")
+		s.logger.PrintErrorMsg("Failed to create menu service")
 	}
 
 	menuHandler := handler.NewMenuHandler(menuService, s.logger)
 	if menuHandler == nil {
-		log.Fatal("Failed to create  handler")
+		s.logger.PrintErrorMsg("Failed to create  handler")
 	}
 
+	// Menu routes
+	s.mux.HandleFunc("POST /menu", menuHandler.AddMenuItem)
 	s.mux.HandleFunc("GET /menu", menuHandler.GetMenuItems)
 	s.mux.HandleFunc("GET /menu/{id}", menuHandler.GetMenuItem)
+	s.mux.HandleFunc("PUT /menu/{id}", menuHandler.UpdateMenuItem)
+	s.mux.HandleFunc("DELETE /menu/{id}", menuHandler.DeleteMenuItem)
 
 	// Orders
 	orderRepository := dal.NewOrderRepository(s.config.data_directory + "/orders.json")
