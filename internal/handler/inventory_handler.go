@@ -107,24 +107,22 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.logger.PrintDebugMsg("Adding new inventory item: %+v", item)
-
 	err := h.InventoryService.AddInventoryItem(item)
 	if err != nil {
 		switch err {
 		case service.ErrNotUniqueID:
 			h.WriteErrorResponse(http.StatusConflict, err, w, r)
 			return
-		case service.ErrNotValidIngredientID,
-			service.ErrNotValidIngredientName,
-			service.ErrNotValidQuantity,
-			service.ErrNotValidUnit:
+		case service.ErrNotValidIngredientID, service.ErrNotValidIngredientName, service.ErrNotValidQuantity, service.ErrNotValidUnit:
 			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			return
 		default:
 			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
+
+	h.logger.PrintDebugMsg("Adding new inventory item: %+v", item)
 
 	h.logger.PrintInfoMsg("Successfully added new inventory item: %+v", item)
 

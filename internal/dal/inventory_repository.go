@@ -39,6 +39,16 @@ func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryI
 		return models.InventoryItem{}, err
 	}
 
+	itemsID := []string{}
+
+	for _, item := range items {
+		itemsID = append(itemsID, item.IngredientID)
+	}
+
+	if i.IngredientID == "" {
+		i.IngredientID = utils.GenerateNewID(itemsID, "ingredient")
+	}
+
 	items = append(items, i)
 
 	err = r.SaveItems(items)

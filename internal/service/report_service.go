@@ -26,6 +26,15 @@ func NewReportService(o dal.OrderRepository, m dal.MenuRepository, i dal.Invento
 func (rs *reportService) GetTotalSales() (float64, error) {
 	var totalSales float64
 
+	// orders, err := rs.orderRepository.GetAllOrders()
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// for _, order := range orders {
+	// 	for _, item := range order.Items {
+	// 		totalSales += item.Price * float64(item.Quantity)
+	// 	}
+	// }
 	// TODO: Implement logic for total sales
 	// TODO: Write comments
 
