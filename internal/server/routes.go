@@ -25,20 +25,35 @@ func (s *Server) registerRoutes() {
 	// !	Решение: Убедитесь, что InventoryService является интерфейсом,
 	// ! 	а не указателем на конкретную реализацию, чтобы сохранить гибкость в тестировании и подмене реализации.
 
+	// TODO: Refactor the architecture of route registering (Decouple registering for functions)
+	/*
+		func (s *Server) registerRoutes() {
+			s.mux.HandleFunc("GET /health", s.HandleHealth)
+
+			s.registerInventoryRoutes()
+
+			s.registerMenuRoutes()
+
+			s.registerOrderRoutes()
+
+			s.registerReportRoutes()
+		}
+	*/
+
 	// Inventory
 	inventoryRepository := dal.NewInventoryRepository(s.config.data_directory + "/inventory.json")
 	if inventoryRepository == nil {
-		s.logger.PrintErrorMsg("Failed to create inventory repository")
+		s.logger.PrintWarnMsg("Failed to create inventory repository")
 	}
 
 	inventoryService := service.NewInventoryService(inventoryRepository)
 	if inventoryService == nil {
-		s.logger.PrintErrorMsg("Failed to create inventory service")
+		s.logger.PrintWarnMsg("Failed to create inventory service")
 	}
 
 	inventoryHandler := handler.NewInventoryHandler(inventoryService, s.logger)
 	if inventoryHandler == nil {
-		s.logger.PrintErrorMsg("Failed to create inventory handler")
+		s.logger.PrintWarnMsg("Failed to create inventory handler")
 	}
 
 	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
@@ -69,17 +84,17 @@ func (s *Server) registerRoutes() {
 	// Orders
 	orderRepository := dal.NewOrderRepository(s.config.data_directory + "/orders.json")
 	if orderRepository == nil {
-		s.logger.PrintErrorMsg("Failed to create order repository")
+		s.logger.PrintWarnMsg("Failed to create order repository")
 	}
 
 	orderService := service.NewOrderService(orderRepository)
 	if inventoryService == nil {
-		s.logger.PrintErrorMsg("Failed to create order service")
+		s.logger.PrintWarnMsg("Failed to create order service")
 	}
 
 	orderHandler := handler.NewOrderHandler(orderService, s.logger)
 	if inventoryHandler == nil {
-		s.logger.PrintErrorMsg("Failed to create order handler")
+		s.logger.PrintWarnMsg("Failed to create order handler")
 	}
 
 	// Order routes
@@ -89,6 +104,21 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("PUT /orders/{id}", orderHandler.UpdateOrder)
 	s.mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	s.mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
+
+	// Aggregations
+	reportService := service.NewReportService(orderRepository, menuRepository, inventoryRepository)
+	if reportService == nil {
+		s.logger.PrintWarnMsg("Failed to create report service")
+	}
+
+	reportHandler := handler.NewReportHandler(reportService, s.logger)
+	if reportService == nil {
+		s.logger.PrintWarnMsg("Failed to create report handler")
+	}
+
+	// Aggregation routes
+	s.mux.HandleFunc("GET /reports/total-sales", reportHandler.GetTotalSales)
+	s.mux.HandleFunc("GET /reports/popular-items", reportHandler.GetPopularItems)
 }
 
 func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
