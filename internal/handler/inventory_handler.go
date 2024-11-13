@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"hot-coffee/internal/service"
@@ -118,6 +119,10 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 	decoder := json.NewDecoder(r.Body)
 	// If an error occurs during decoding (e.g., invalid JSON), return a BadRequest (400) response
 	if err := decoder.Decode(&item); err != nil {
+		if err == io.EOF {
+			h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+			return
+		}
 		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
@@ -206,14 +211,15 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
 
 	// Send an HTTP status code 200 (OK) and write the retrieved item data to the response body.
-	w.WriteHeader(http.StatusOK)
 
 	// Attempt to write the item data to the response and log any errors during the write process.
 	_, err = w.Write(data)
 	if err != nil {
-		// Log an error message if the response writing fails.
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+		return
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // UpdateInventoryItem handles the HTTP request to update an existing inventory item by its ID.
@@ -229,7 +235,7 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 	itemId := r.PathValue("id")
 	// Check if the item ID is valid (non-empty). If invalid, return a Bad Request (400) response.
 	if len(itemId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("item id is not valid"), w, r)
 		return
 	}
 
@@ -238,6 +244,10 @@ func (h *inventoryHandler) UpdateInventoryItem(w http.ResponseWriter, r *http.Re
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&item); err != nil {
 		// If the request body cannot be decoded, return a Bad Request (400) response.
+		if err == io.EOF {
+			h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+			return
+		}
 		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
@@ -272,7 +282,7 @@ func (h *inventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Re
 	itemId := r.PathValue("id")
 	// Check if the item ID is valid (non-empty). If invalid, return a Bad Request (400) response.
 	if len(itemId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("item id is not valid"), w, r)
 		return
 	}
 

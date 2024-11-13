@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	ErrNoOrder error = errors.New("order not found")
+
 	ErrNotValidID       error = errors.New("ingredient id is not valid")
 	ErrNotUniqueID      error = errors.New("ingredient ID must be unique")
 	ErrNoItem           error = errors.New("item not found")

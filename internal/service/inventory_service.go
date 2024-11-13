@@ -107,27 +107,13 @@ func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
 func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
-	inventoryItems, err := s.InventoryRepository.GetAllItems()
+	var inventoryItem models.InventoryItem
+	inventoryItem, err := s.InventoryRepository.GetItemById(id)
 	if err != nil {
 		if err.Error() == "EOF" {
 			return nil, ErrNoItem
 		}
 		return nil, err
-	}
-
-	var inventoryItem models.InventoryItem
-
-	isFound := false
-	for _, item := range inventoryItems {
-		if item.IngredientID == id {
-			inventoryItem = item
-			isFound = true
-			break
-		}
-	}
-
-	if !isFound {
-		return nil, ErrNoItem
 	}
 
 	data, err := json.MarshalIndent(inventoryItem, "", " ")
@@ -181,32 +167,5 @@ func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving or saving items in the repository.
 func (s *inventoryService) DeleteInventoryItem(id string) error {
-	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	if err != nil {
-		if err.Error() == "EOF" {
-			return ErrNoItem
-		}
-		return err
-	}
-
-	isFound := false
-	// deleting from the slice
-	for i, item := range inventoryItems {
-		if item.IngredientID == id {
-			inventoryItems = append(inventoryItems[:i], inventoryItems[i+1:]...)
-			isFound = true
-			break
-		}
-	}
-
-	if !isFound {
-		return ErrNoItem
-	}
-
-	err = s.InventoryRepository.SaveItems(inventoryItems)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.InventoryRepository.DeleteItemByID(id)
 }

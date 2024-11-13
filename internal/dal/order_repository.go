@@ -2,6 +2,7 @@ package dal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +15,7 @@ type OrderRepository interface {
 	AddOrder(order models.Order) (models.Order, error)
 	GetAllOrders() ([]models.Order, error)
 	GetOrderById(id string) (models.Order, error)
-	DeleteOrderById(id string) (models.Order, error)
+	DeleteOrderById(id string) error
 	SaveOrders(orders []models.Order) error
 	OrderExists(o models.Order) (bool, error)
 	RewriteOrder(id string, newOrder models.Order) error
@@ -45,7 +46,7 @@ func (r *orderRepository) AddOrder(order models.Order) (models.Order, error) {
 }
 
 func (r *orderRepository) GetAllOrders() ([]models.Order, error) {
-	orders := []models.InventoryItem{}
+	orders := []models.Order{}
 
 	exists, err := utils.FileExists(r.filePath)
 	if err != nil {
@@ -72,20 +73,52 @@ func (r *orderRepository) GetAllOrders() ([]models.Order, error) {
 		return []models.Order{}, err
 	}
 
-	return []models.Order{}, nil
+	return orders, nil
 }
 
 func (r *orderRepository) GetOrderById(id string) (models.Order, error) {
-	// TODO: getAllOrders and search for order by id
-	// TODO: Unmarshal JSON to Order
-	return models.Order{}, nil
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		return models.Order{}, err
+	}
+
+	for _, order := range orders {
+		if order.ID == id {
+			return order, nil
+		}
+	}
+
+	return models.Order{}, errors.New("order not found")
 }
 
-func (r *orderRepository) DeleteOrderById(id string) (models.Order, error) {
-	// TODO: Get all orders, find order by id and delete it
-	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
-	// TODO: Return the deleted order
-	return models.Order{}, nil
+func (r *orderRepository) DeleteOrderById(id string) error {
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		if err.Error() == "EOF" {
+			return errors.New("order not found")
+		}
+		return err
+	}
+
+	isFound := false
+	for i, order := range orders {
+		if order.ID == id {
+			orders = append(orders[:i], orders[i+1:]...)
+			isFound = true
+			break
+		}
+	}
+
+	if !isFound {
+		return errors.New("order not found")
+	}
+
+	err = r.SaveOrders(orders)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *orderRepository) SaveOrders(orders []models.Order) error {
@@ -139,7 +172,22 @@ func (r *orderRepository) OrderExists(o models.Order) (bool, error) {
 }
 
 func (r *orderRepository) RewriteOrder(id string, newOrder models.Order) error {
-	// TODO: Get all orders, find order by id and replace it with newOrder
-	// TODO: Marshal orders to JSON and write new file(ioutil.WriteFile, 0644)
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		return err
+	}
+
+	for i, order := range orders {
+		if order.ID == id {
+			orders[i] = newOrder
+			break
+		}
+	}
+
+	err = r.SaveOrders(orders)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

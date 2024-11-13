@@ -18,6 +18,7 @@ type InventoryRepository interface {
 	SaveItems(inventoryItems []models.InventoryItem) error
 	ItemExists(i models.InventoryItem) (bool, error)
 	RewriteItem(id string, newItem models.InventoryItem) error
+	DeleteItemByID(id string) error
 }
 
 type inventoryRepository struct {
@@ -198,4 +199,40 @@ func (r *inventoryRepository) ItemExists(i models.InventoryItem) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// DeleteInventoryItem deletes an inventory item by its ID.
+// Returns nil if the deletion is successful.
+// The following errors may be returned:
+// - ErrNoItem if the item with the specified ID is not found.
+// - An error if there is a failure when retrieving or saving items in the repository.
+func (r *inventoryRepository) DeleteItemByID(id string) error {
+	inventoryItems, err := r.GetAllItems()
+	if err != nil {
+		if err.Error() == "EOF" {
+			return errors.New("item not found")
+		}
+		return err
+	}
+
+	isFound := false
+	// deleting from the slice
+	for i, item := range inventoryItems {
+		if item.IngredientID == id {
+			inventoryItems = append(inventoryItems[:i], inventoryItems[i+1:]...)
+			isFound = true
+			break
+		}
+	}
+
+	if !isFound {
+		return errors.New("item not found")
+	}
+
+	err = r.SaveItems(inventoryItems)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )
@@ -38,11 +40,15 @@ func ValidateOrderItems(items []models.OrderItem) error {
 }
 
 func (s *orderService) AddOrder(o models.Order) error {
-	if exists, err := s.OrderRepository.OrderExists(o); err != nil {
-		return err
-	} else if exists {
-		return ErrNotUniqueOrder
-	}
+	// TODO: Пересмотреть добавление проверки уникальности заказа
+	// if exists, err := s.OrderRepository.OrderExists(o); err != nil {
+	// 	return err
+	// } else if exists {
+	// 	return ErrNotUniqueOrder
+	// }
+
+	// TODO: проверить есть ли в инвентаре достаточное количество ингредиентов для всех позиций заказа
+	// TODO: Если каких-то ингредиентов недостаточно, заказ не обрабатывается, и возвращается сообщение об ошибке с указанием недостаточных ингредиентов.
 
 	// Order validation
 	if err := ValidateOrder(o); err != nil {
@@ -52,22 +58,39 @@ func (s *orderService) AddOrder(o models.Order) error {
 	if _, err := s.OrderRepository.AddOrder(o); err != nil {
 		return err
 	}
-
-	// TODO: Validate the order
-	// TODO: Call AddOrder method from repository
 	return nil
 }
 
 func (s *orderService) RetrieveOrders() ([]byte, error) {
-	// TODO: Call GetAllOrders from repository
-	// TODO: Marshal orders to JSON and return
-	return nil, nil
+	orders, err := s.OrderRepository.GetAllOrders()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.MarshalIndent(orders, "", " ")
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (s *orderService) RetrieveOrder(id string) ([]byte, error) {
-	// TODO: Call GetOrderById from repository
-	// TODO: Marshal the order to JSON and return
-	return nil, nil
+	var order models.Order
+	order, err := s.OrderRepository.GetOrderById(id)
+	if err != nil {
+		if err.Error() == "EOF" {
+			return nil, ErrNoOrder
+		}
+		return nil, err
+	}
+
+	data, err := json.MarshalIndent(order, "", " ")
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (s *orderService) UpdateOrder(id string, item models.Order) error {
@@ -77,12 +100,14 @@ func (s *orderService) UpdateOrder(id string, item models.Order) error {
 }
 
 func (s *orderService) DeleteOrder(id string) error {
-	// TODO: Call DeleteOrderById from repository
-	return nil
+	return s.OrderRepository.DeleteOrderById(id)
 }
 
 func (s *orderService) CloseOrder(id string) error {
-	// TODO: Implement logic to close the order
+	// TODO: Когда заказ закрывается через /orders/{id}/close, система считает, что заказ выполнен, и обновляет инвентарь, вычитая количество ингредиентов, необходимых для его выполнения.
+	// TODO: После успешного вычитания ингредиентов заказ считается закрытым, и он больше не будет доступен для изменений.
+	// TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
+
 	// TODO: Call UpdateOrder or DeleteOrder from repository if needed
 	return nil
 }

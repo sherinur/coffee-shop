@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 
 	"hot-coffee/internal/service"
@@ -84,6 +86,10 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var order models.Order
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&order); err != nil {
+		if err == io.EOF {
+			h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+			return
+		}
 		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
@@ -108,17 +114,50 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to Retrieve all orders.
+	// Retrieve the orders from the service layer
+	data, err := h.OrderService.RetrieveOrders()
+	if err != nil {
+		switch err {
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	h.logger.PrintDebugMsg("Retrieved orders")
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Retrieving all orders."))
+	w.Write(data)
 }
 
 func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := r.PathValue("id")
 
-	// TODO: implement logic to Retrieve a specific order by ID.
+	if len(orderId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		return
+	}
+
+	data, err := h.OrderService.RetrieveOrder(orderId)
+	if err != nil {
+		if err.Error() == "order not found" {
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			return
+		} else {
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
+	h.logger.PrintDebugMsg("Retrieved order with ID: %s", orderId)
+
+	_, err = w.Write(data)
+	if err != nil {
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Retrieve a specific order by ID: " + orderId))
 }
 
 func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
@@ -132,9 +171,22 @@ func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := r.PathValue("id")
 
-	// TODO: implement logic to Delete an order by ID.
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Delete an order by ID: " + orderId))
+	if len(orderId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		return
+	}
+
+	err := h.OrderService.DeleteOrder(orderId)
+	if err != nil {
+		if err.Error() == "order not found" {
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			return
+		}
+	}
+
+	h.logger.PrintDebugMsg("order with ID: %s successfully deleted", orderId)
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
