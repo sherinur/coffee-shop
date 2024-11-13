@@ -39,20 +39,16 @@ func NewMenuService(repo dal.MenuRepository) *menuService {
 // - ErrInvalidIngredientID if any ingredient has an invalid ID (empty or contains spaces).
 // - ErrInvalidIngredientQty if any ingredient has a quantity less than 1.
 func ValidateMenuItem(i models.MenuItem) error {
-	if i.ID == "" {
-		return ErrNotValidID
-	}
-
-	if strings.Contains(i.ID, " ") {
-		return ErrIDContainsSpace
+	if i.ID == "" || strings.Contains(i.ID, " ") {
+		return ErrNotValidMenuID
 	}
 
 	if i.Name == "" {
-		return ErrNotValidName
+		return ErrNotValidMenuName
 	}
 
 	if i.Description == "" {
-		return ErrNotValidDescription
+		return ErrNotValidMenuDescription
 	}
 
 	if i.Price <= 0 {
@@ -60,18 +56,16 @@ func ValidateMenuItem(i models.MenuItem) error {
 	}
 
 	if i.Ingredients == nil || len(i.Ingredients) < 1 {
-		return ErrNotValidIngredients
+		return ErrNotValidIngredientID
 	}
 
 	for _, ingredient := range i.Ingredients {
-		if ingredient.IngredientID == "" {
-			return ErrInvalidIngredientID
+		if ingredient.IngredientID == "" || strings.Contains(ingredient.IngredientID, " ") {
+			return ErrNotValidIngredientID
 		}
-		if strings.Contains(ingredient.IngredientID, " ") {
-			return ErrInvalidIngredientID
-		}
+
 		if ingredient.Quantity < 1 {
-			return ErrInvalidIngredientQty
+			return ErrNotValidQuantity
 		}
 	}
 
@@ -87,7 +81,7 @@ func (s *menuService) AddMenuItem(i models.MenuItem) error {
 	if exists, err := s.MenuRepository.MenuItemExists(i); err != nil {
 		return err
 	} else if exists {
-		return ErrNotUniqueID
+		return ErrNotUniqueMenuID
 	}
 
 	// Item validation
@@ -161,7 +155,7 @@ func (s *menuService) UpdateMenuItem(id string, i models.MenuItem) error {
 		if exists, err := s.MenuRepository.MenuItemExists(i); err != nil {
 			return err
 		} else if exists {
-			return ErrNotUniqueID
+			return ErrNotUniqueMenuID
 		}
 	}
 

@@ -14,12 +14,11 @@ var (
 	ErrNotValidQuantity error = errors.New("ingredient quantity is not valid")
 	ErrNotValidUnit     error = errors.New("ingredient unit is not valid")
 
-	ErrNotValidDescription  error = errors.New("menu description is not valid")
-	ErrNotValidPrice        error = errors.New("menu price must be greater than 0")
-	ErrNotValidIngredients  error = errors.New("menu ingredients must be greater than 1")
-	ErrIDContainsSpace      error = errors.New("ID cannot contain spaces")
-	ErrInvalidIngredientID  error = errors.New("ingredient ID cannot be empty or contain spaces")
-	ErrInvalidIngredientQty error = errors.New("ingredient quantity must be greater than 1")
+	ErrNotValidMenuID          error = errors.New("menu ID is not valid")
+	ErrNotUniqueMenuID         error = errors.New("menu ID must be unique")
+	ErrNotValidMenuName        error = errors.New("menu name is not valid")
+	ErrNotValidMenuDescription error = errors.New("menu description cannot be empty")
+	ErrNotValidPrice           error = errors.New("menu price must be greater than 0")
 
 	ErrNotUniqueOrder error = errors.New("order ID must be unique")
 )
