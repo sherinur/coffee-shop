@@ -19,11 +19,11 @@ type orderService struct {
 	InventoryRepository dal.InventoryRepository
 }
 
-func NewOrderService(repo dal.OrderRepository) *orderService {
-	if repo == nil {
+func NewOrderService(or dal.OrderRepository, ir dal.InventoryRepository) *orderService {
+	if or == nil || ir == nil {
 		return nil
 	}
-	return &orderService{OrderRepository: repo}
+	return &orderService{OrderRepository: or, InventoryRepository: ir}
 }
 
 func ValidateOrder(o models.Order) error {

@@ -24,23 +24,22 @@ func (s *Server) registerRoutes() {
 	// !	Решение: Убедитесь, что InventoryService является интерфейсом,
 	// ! 	а не указателем на конкретную реализацию, чтобы сохранить гибкость в тестировании и подмене реализации.
 
-	// TODO: Refactor the architecture of route registering (Decouple registering for functions)
-	/*
-		func (s *Server) registerRoutes() {
-			s.mux.HandleFunc("GET /health", s.HandleHealth)
+	// Registering inventory routes
+	s.registerInventoryRoutes()
 
-			s.registerInventoryRoutes()
+	// Registering  menu routes
+	s.registerMenuRoutes()
 
-			s.registerMenuRoutes()
+	// Registering ordeer routes
+	s.registerOrderRoutes()
 
-			s.registerOrderRoutes()
+	//  Registering report routes
+	s.registerReportRoutes()
+}
 
-			s.registerReportRoutes()
-		}
-	*/
-
-	// Inventory
-	inventoryRepository := dal.NewInventoryRepository(s.config.data_directory + "/inventory.json")
+func (s *Server) registerInventoryRoutes() {
+	// Interfaces
+	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
 	if inventoryRepository == nil {
 		s.logger.PrintWarnMsg("Failed to create inventory repository")
 	}
@@ -55,15 +54,20 @@ func (s *Server) registerRoutes() {
 		s.logger.PrintWarnMsg("Failed to create inventory handler")
 	}
 
-	// Inventory routes
+	// Routes
 	s.mux.HandleFunc("POST /inventory", inventoryHandler.AddInventoryItem)
 	s.mux.HandleFunc("GET /inventory", inventoryHandler.GetInventoryItems)
 	s.mux.HandleFunc("GET /inventory/{id}", inventoryHandler.GetInventoryItem)
 	s.mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.UpdateInventoryItem)
 	s.mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
-	// Menu
-	menuRepository := dal.NewMenuRepository(s.config.data_directory + "/menu_items.json")
+	// logging
+	s.logger.PrintInfoMsg("Inventory routes is registered successfully")
+}
+
+func (s *Server) registerMenuRoutes() {
+	// Interfaces
+	menuRepository := dal.NewMenuRepository(s.config.menu_file)
 	if menuRepository == nil {
 		s.logger.PrintErrorMsg("Failed to create menu repository")
 	}
@@ -78,26 +82,36 @@ func (s *Server) registerRoutes() {
 		s.logger.PrintErrorMsg("Failed to create  handler")
 	}
 
-	// Menu routes
+	// Routes
 	s.mux.HandleFunc("POST /menu", menuHandler.AddMenuItem)
 	s.mux.HandleFunc("GET /menu", menuHandler.GetMenuItems)
 	s.mux.HandleFunc("GET /menu/{id}", menuHandler.GetMenuItem)
 	s.mux.HandleFunc("PUT /menu/{id}", menuHandler.UpdateMenuItem)
 	s.mux.HandleFunc("DELETE /menu/{id}", menuHandler.DeleteMenuItem)
 
+	// logging
+	s.logger.PrintInfoMsg("Menu routes is registered successfully")
+}
+
+func (s *Server) registerOrderRoutes() {
 	// Orders
-	orderRepository := dal.NewOrderRepository(s.config.data_directory + "/orders.json")
+	orderRepository := dal.NewOrderRepository(s.config.order_file)
 	if orderRepository == nil {
 		s.logger.PrintWarnMsg("Failed to create order repository")
 	}
 
-	orderService := service.NewOrderService(orderRepository)
-	if inventoryService == nil {
+	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
+	if inventoryRepository == nil {
+		s.logger.PrintWarnMsg("Failed to create inventory repository")
+	}
+
+	orderService := service.NewOrderService(orderRepository, inventoryRepository)
+	if orderService == nil {
 		s.logger.PrintWarnMsg("Failed to create order service")
 	}
 
 	orderHandler := handler.NewOrderHandler(orderService, s.logger)
-	if inventoryHandler == nil {
+	if orderHandler == nil {
 		s.logger.PrintWarnMsg("Failed to create order handler")
 	}
 
@@ -109,7 +123,27 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	s.mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
 
-	// Aggregations
+	// logging
+	s.logger.PrintInfoMsg("Order routes is registered successfully")
+}
+
+func (s *Server) registerReportRoutes() {
+	// Interfaces
+	orderRepository := dal.NewOrderRepository(s.config.order_file)
+	if orderRepository == nil {
+		s.logger.PrintWarnMsg("Failed to create order repository")
+	}
+
+	menuRepository := dal.NewMenuRepository(s.config.menu_file)
+	if menuRepository == nil {
+		s.logger.PrintErrorMsg("Failed to create menu repository")
+	}
+
+	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
+	if inventoryRepository == nil {
+		s.logger.PrintWarnMsg("Failed to create inventory repository")
+	}
+
 	reportService := service.NewReportService(orderRepository, menuRepository, inventoryRepository)
 	if reportService == nil {
 		s.logger.PrintWarnMsg("Failed to create report service")
@@ -123,6 +157,9 @@ func (s *Server) registerRoutes() {
 	// Aggregation routes
 	s.mux.HandleFunc("GET /reports/total-sales", reportHandler.GetTotalSales)
 	s.mux.HandleFunc("GET /reports/popular-items", reportHandler.GetPopularItems)
+
+	// logging
+	s.logger.PrintInfoMsg("Report routes is registered successfully")
 }
 
 func (s *Server) RequestMiddleware(next http.Handler) http.Handler {

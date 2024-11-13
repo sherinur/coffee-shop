@@ -5,6 +5,10 @@ type Config struct {
 	port           string
 	data_directory string
 
+	menu_file      string
+	inventory_file string
+	order_file     string
+
 	read_timeout  string
 	write_timeout string
 	idle_timout   string
@@ -12,7 +16,6 @@ type Config struct {
 	log_file string
 	cfg_file string
 
-	max_file_size   string
 	allow_overwrite bool
 }
 
@@ -26,14 +29,18 @@ func NewConfig(configPath, port, dir string) *Config {
 		env:            "local",
 		port:           port,
 		data_directory: dir,
-		read_timeout:   "4s",
-		write_timeout:  "4s",
-		idle_timout:    "60s",
+
+		menu_file:      dir + "/menu_items.json",
+		inventory_file: dir + "/inventory.json",
+		order_file:     dir + "/orders.json",
+
+		read_timeout:  "4s",
+		write_timeout: "4s",
+		idle_timout:   "60s",
 
 		log_file: "./logs/triple-s.log",
 		cfg_file: "./configs/server.yaml",
 
-		max_file_size:   "10MB",
 		allow_overwrite: true,
 	}
 }
