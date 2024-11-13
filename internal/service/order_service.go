@@ -2,6 +2,8 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -14,6 +16,7 @@ type OrderService interface {
 	UpdateOrder(id string, item models.Order) error
 	DeleteOrder(id string) error
 	CloseOrder(id string) error
+	IsInventorySufficient(orderItems []models.OrderItem) (bool, error)
 }
 
 type orderService struct {
@@ -29,33 +32,71 @@ func NewOrderService(or dal.OrderRepository, ir dal.InventoryRepository) *orderS
 }
 
 func ValidateOrder(o models.Order) error {
-	// TODO: Define and implement validation rules for order
-	// TODO: Validate order items using ValidateOrderItems()
+	if o.ID == "" || strings.Contains(o.ID, " ") {
+		return ErrNotValidOrderID
+	}
+
+	if o.CustomerName == "" {
+		return ErrNotValidOrderCustomerName
+	}
+
+	err := ValidateOrderItems(o.Items)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != "" {
+		return ErrNotValidStatusField
+	}
+
+	if o.CreatedAt != "" {
+		return ErrNotValidCreatedAt
+	}
+
 	return nil
 }
 
 func ValidateOrderItems(items []models.OrderItem) error {
-	// TODO: Define and implement validation rules for order items
+	if items == nil || len(items) < 1 {
+		return ErrNotValidOrderItems
+	}
 
-	// TODO: Добавить правило чтобы не повторялись продукты в массиве (один ингредиент и количество сразу пишутся)
+	for k, item := range items {
+		for l, item2 := range items {
+			if item.ProductID == item2.ProductID && k != l {
+				return ErrDuplicateOrderItems
+			}
+		}
+		if item.ProductID == "" || strings.Contains(item.ProductID, " ") {
+			return ErrNotValidIngredientID
+		}
+
+		if item.Quantity < 1 {
+			return ErrNotValidQuantity
+		}
+	}
 	return nil
 }
 
 func (s *orderService) AddOrder(o models.Order) error {
-	// TODO: Пересмотреть добавление проверки уникальности заказа
-	// if exists, err := s.OrderRepository.OrderExists(o); err != nil {
-	// 	return err
-	// } else if exists {
-	// 	return ErrNotUniqueOrder
-	// }
+	if exists, err := s.OrderRepository.OrderExists(o); err != nil {
+		return err
+	} else if exists {
+		return ErrNotUniqueOrder
+	}
 
-	// TODO: проверить есть ли в инвентаре достаточное количество ингредиентов для всех позиций заказа
-	// TODO: Если каких-то ингредиентов недостаточно, заказ не обрабатывается, и возвращается сообщение об ошибке с указанием недостаточных ингредиентов.
+	enoughItems, err := s.IsInventorySufficient(o.Items)
+	if err != nil || !enoughItems {
+		return err
+	}
 
 	// Order validation
 	if err := ValidateOrder(o); err != nil {
 		return err
 	}
+
+	o.Status = "Open"
+	o.CreatedAt = time.Now().Format(time.RFC3339)
 
 	if _, err := s.OrderRepository.AddOrder(o); err != nil {
 		return err
@@ -112,4 +153,32 @@ func (s *orderService) CloseOrder(id string) error {
 
 	// TODO: Call UpdateOrder or DeleteOrder from repository if needed
 	return nil
+}
+
+func (s *orderService) IsInventorySufficient(orderItems []models.OrderItem) (bool, error) {
+	inventoryItem, err := s.InventoryRepository.GetAllItems()
+	if err != nil {
+		return false, err
+	}
+
+	for _, orderItem := range orderItems {
+		exists, err := s.InventoryRepository.ItemExistsById(orderItem.ProductID)
+		if err != nil {
+			return false, err
+		}
+
+		if !exists {
+			return false, ErrOrderProductNotFound
+		}
+
+		for _, inventoryItem := range inventoryItem {
+			if orderItem.ProductID == inventoryItem.IngredientID {
+				if orderItem.Quantity > int(inventoryItem.Quantity) {
+					return false, ErrNotEnoughInventoryQuantity
+				}
+			}
+		}
+	}
+
+	return true, nil
 }

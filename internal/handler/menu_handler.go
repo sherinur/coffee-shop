@@ -100,7 +100,8 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 			service.ErrNotValidMenuDescription,
 			service.ErrNotValidPrice,
 			service.ErrNotValidIngredientID,
-			service.ErrNotValidQuantity:
+			service.ErrNotValidQuantity,
+			service.ErrDuplicateMenuIngredients:
 			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		default:
@@ -201,7 +202,8 @@ func (h *menuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
 			service.ErrNotValidMenuDescription,
 			service.ErrNotValidPrice,
 			service.ErrNotValidIngredientID,
-			service.ErrNotValidQuantity:
+			service.ErrNotValidQuantity,
+			service.ErrDuplicateMenuIngredients:
 			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		default:
