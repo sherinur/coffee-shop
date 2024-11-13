@@ -36,16 +36,12 @@ func NewInventoryService(repo dal.InventoryRepository) *inventoryService {
 // - ErrNotValidQuantity if the Quantity is zero or negative.
 // - ErrNotValidUnit if the Unit is empty.
 func ValidateItem(i models.InventoryItem) error {
-	if i.IngredientID == "" {
-		return ErrNotValidID
-	}
-
-	if strings.Contains(i.IngredientID, " ") {
-		return ErrIDContainsSpace
+	if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
+		return ErrNotValidIngredientID
 	}
 
 	if i.Name == "" {
-		return ErrNotValidName
+		return ErrNotValidIngredientName
 	}
 
 	if i.Quantity <= 0 {
@@ -145,7 +141,6 @@ func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 // - ErrNotUniqueID if new item id not unique.
 // - An error if there is a validation issue or a failure when updating the repository.
 func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem) error {
-	// Existence test of old item
 	if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
 		return err
 	} else if !exists {
