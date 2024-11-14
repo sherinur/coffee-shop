@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,19 +19,21 @@ type OrderService interface {
 	CloseOrder(id string) error
 	IsInventorySufficient(orderItems []models.OrderItem) (bool, error)
 	ReduceIngredients(orderItems []models.OrderItem) error
+	CalculateTotalSales() (float64, error)
 }
 
 type orderService struct {
 	OrderRepository     dal.OrderRepository
 	MenuRepository      dal.MenuRepository
 	InventoryRepository dal.InventoryRepository
+	ReportRepository    dal.ReportRepository
 }
 
-func NewOrderService(or dal.OrderRepository, menu dal.MenuRepository, ir dal.InventoryRepository) *orderService {
+func NewOrderService(or dal.OrderRepository, menu dal.MenuRepository, ir dal.InventoryRepository, re dal.ReportRepository) *orderService {
 	if or == nil || ir == nil {
 		return nil
 	}
-	return &orderService{OrderRepository: or, MenuRepository: menu, InventoryRepository: ir}
+	return &orderService{OrderRepository: or, MenuRepository: menu, InventoryRepository: ir, ReportRepository: re}
 }
 
 func ValidateOrder(o models.Order) error {
@@ -172,7 +175,22 @@ func (s *orderService) CloseOrder(id string) error {
 		return err
 	}
 
+	if order.Status != "open" {
+		return ErrOrderClosed
+	}
+
 	err = s.ReduceIngredients(order.Items)
+	if err != nil {
+		return err
+	}
+
+	totalOrderPrice, err := s.CalculateTotalSales()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("TOTAL ORDER PRICE:", totalOrderPrice)
+	err = s.ReportRepository.UpdateTotalSales(totalOrderPrice)
 	if err != nil {
 		return err
 	}
@@ -306,4 +324,27 @@ func (s *orderService) ReduceIngredients(orderItems []models.OrderItem) error {
 	}
 
 	return nil
+}
+
+func (s *orderService) CalculateTotalSales() (float64, error) {
+	totalSales := 0.0
+
+	orders, err := s.OrderRepository.GetAllOrders()
+	if err != nil {
+		return 0.0, err
+	}
+
+	for _, order := range orders {
+		for _, orderItem := range order.Items {
+			menuItem, err := s.MenuRepository.GetMenuItemById(orderItem.ProductID)
+			if err != nil {
+				return 0.0, err
+			}
+
+			itemTotal := menuItem.Price * float64(orderItem.Quantity)
+			totalSales += itemTotal
+		}
+	}
+
+	return totalSales, nil
 }

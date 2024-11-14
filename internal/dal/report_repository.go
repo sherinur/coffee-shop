@@ -11,7 +11,7 @@ import (
 )
 
 type ReportRepository interface {
-	GetTotalSales() (int64, error)
+	GetTotalSales() (models.TotalSales, error)
 	SetTotalSales(t float64) error
 	SaveTotalSales(totalSales models.TotalSales) error
 	UpdateTotalSales(income float64) error
@@ -110,7 +110,7 @@ func (r *reportRepository) UpdateTotalSales(income float64) error {
 	}
 
 	totalSales.TotalSales += income
-	return nil
+	return r.SaveTotalSales(totalSales)
 }
 
 func (r *reportRepository) ResetTotalSales(income float64) error {

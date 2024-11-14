@@ -8,6 +8,7 @@ type Config struct {
 	menu_file      string
 	inventory_file string
 	order_file     string
+	report_file    string
 
 	read_timeout  string
 	write_timeout string
@@ -33,6 +34,7 @@ func NewConfig(configPath, port, dir string) *Config {
 		menu_file:      dir + "/menu_items.json",
 		inventory_file: dir + "/inventory.json",
 		order_file:     dir + "/orders.json",
+		report_file:    dir + "/report.json",
 
 		read_timeout:  "4s",
 		write_timeout: "4s",

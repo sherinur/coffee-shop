@@ -118,6 +118,8 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.PrintInfoMsg("Successfully added new menu item: %+v", item)
 
+	// addedItem, _ := h.MenuService.RetrieveMenuItem(item.ID)
+
 	h.WriteJSONResponse(http.StatusCreated, item, w, r)
 }
 
