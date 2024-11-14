@@ -38,6 +38,16 @@ func (r *menuRepository) AddMenuItem(i models.MenuItem) (models.MenuItem, error)
 		return models.MenuItem{}, err
 	}
 
+	itemsID := []string{}
+
+	for _, item := range items {
+		itemsID = append(itemsID, item.ID)
+	}
+
+	if i.ID == "" {
+		i.ID = utils.GenerateNewID(itemsID, "menu")
+	}
+
 	items = append(items, i)
 
 	err = r.SaveMenuItems(items)

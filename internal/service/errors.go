@@ -31,7 +31,9 @@ var (
 	ErrNotValidCreatedAt         error = errors.New("created_at field cannot be set manually")
 
 	ErrOrderProductNotFound       error = errors.New("product not found")
-	ErrNotEnoughInventoryQuantity error = errors.New("not enough item quantity")
+	ErrNotEnoughInventoryQuantity error = errors.New("not enough ingredient quantity")
+	ErrProductNotFound            error = errors.New("the product is not on the menu")
+	ErrInventoryItemNotFound      error = errors.New("ingredient not found")
 
 	ErrNotUniqueOrder error = errors.New("order ID must be unique")
 )

@@ -36,6 +36,16 @@ func (r *orderRepository) AddOrder(order models.Order) (models.Order, error) {
 		return models.Order{}, err
 	}
 
+	ordersID := []string{}
+
+	for _, order := range orders {
+		ordersID = append(ordersID, order.ID)
+	}
+
+	if order.ID == "" {
+		order.ID = utils.GenerateNewID(ordersID, "orders")
+	}
+
 	orders = append(orders, order)
 
 	err = r.SaveOrders(orders)

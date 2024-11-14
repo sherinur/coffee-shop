@@ -17,22 +17,24 @@ type OrderService interface {
 	DeleteOrder(id string) error
 	CloseOrder(id string) error
 	IsInventorySufficient(orderItems []models.OrderItem) (bool, error)
+	ReduceIngredients(orderItems []models.OrderItem) error
 }
 
 type orderService struct {
 	OrderRepository     dal.OrderRepository
+	MenuRepository      dal.MenuRepository
 	InventoryRepository dal.InventoryRepository
 }
 
-func NewOrderService(or dal.OrderRepository, ir dal.InventoryRepository) *orderService {
+func NewOrderService(or dal.OrderRepository, menu dal.MenuRepository, ir dal.InventoryRepository) *orderService {
 	if or == nil || ir == nil {
 		return nil
 	}
-	return &orderService{OrderRepository: or, InventoryRepository: ir}
+	return &orderService{OrderRepository: or, MenuRepository: menu, InventoryRepository: ir}
 }
 
 func ValidateOrder(o models.Order) error {
-	if o.ID == "" || strings.Contains(o.ID, " ") {
+	if strings.Contains(o.ID, " ") {
 		return ErrNotValidOrderID
 	}
 
@@ -45,7 +47,7 @@ func ValidateOrder(o models.Order) error {
 		return err
 	}
 
-	if o.Status != "" {
+	if o.Status != "" || o.Status == "closed" {
 		return ErrNotValidStatusField
 	}
 
@@ -62,13 +64,14 @@ func ValidateOrderItems(items []models.OrderItem) error {
 	}
 
 	for k, item := range items {
+		if item.ProductID == "" || strings.Contains(item.ProductID, " ") {
+			return ErrNotValidIngredientID
+		}
+
 		for l, item2 := range items {
 			if item.ProductID == item2.ProductID && k != l {
 				return ErrDuplicateOrderItems
 			}
-		}
-		if item.ProductID == "" || strings.Contains(item.ProductID, " ") {
-			return ErrNotValidIngredientID
 		}
 
 		if item.Quantity < 1 {
@@ -78,27 +81,27 @@ func ValidateOrderItems(items []models.OrderItem) error {
 	return nil
 }
 
-func (s *orderService) AddOrder(o models.Order) error {
-	if exists, err := s.OrderRepository.OrderExists(o); err != nil {
+func (s *orderService) AddOrder(order models.Order) error {
+	if exists, err := s.OrderRepository.OrderExists(order); err != nil {
 		return err
 	} else if exists {
 		return ErrNotUniqueOrder
 	}
 
-	enoughItems, err := s.IsInventorySufficient(o.Items)
-	if err != nil || !enoughItems {
+	_, err := s.IsInventorySufficient(order.Items)
+	if err != nil {
 		return err
 	}
 
 	// Order validation
-	if err := ValidateOrder(o); err != nil {
+	if err := ValidateOrder(order); err != nil {
 		return err
 	}
 
-	o.Status = "Open"
-	o.CreatedAt = time.Now().Format(time.RFC3339)
+	order.Status = "Open"
+	order.CreatedAt = time.Now().Format(time.RFC3339)
 
-	if _, err := s.OrderRepository.AddOrder(o); err != nil {
+	if _, err := s.OrderRepository.AddOrder(order); err != nil {
 		return err
 	}
 	return nil
@@ -139,6 +142,19 @@ func (s *orderService) RetrieveOrder(id string) ([]byte, error) {
 func (s *orderService) UpdateOrder(id string, order models.Order) error {
 	// TODO: Validate the order update
 	// TODO: Call RewriteOrder method from repository ->  err := s.OrderRepository.RewriteOrder(id, order)
+	if err := ValidateOrder(order); err != nil {
+		return err
+	}
+	if order.ID == "" {
+		order.ID = id
+	}
+	order.Status = "Open"
+
+	err := s.OrderRepository.RewriteOrder(id, order)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -152,33 +168,141 @@ func (s *orderService) CloseOrder(id string) error {
 	// ? TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
 
 	// TODO: Call UpdateOrder or DeleteOrder from repository if needed
+	order, err := s.OrderRepository.GetOrderById(id)
+	if err != nil {
+		return err
+	}
+
+	err = s.ReduceIngredients(order.Items)
+	if err != nil {
+		return err
+	}
+
+	order.Status = "closed"
+
+	err = s.OrderRepository.RewriteOrder(id, order)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
+// write status code 422
 func (s *orderService) IsInventorySufficient(orderItems []models.OrderItem) (bool, error) {
-	inventoryItem, err := s.InventoryRepository.GetAllItems()
+	inventoryMap := make(map[string]models.InventoryItem)
+	inventoryItems, err := s.InventoryRepository.GetAllItems()
+	if err != nil {
+		return false, err
+	}
+	for _, item := range inventoryItems {
+		inventoryMap[item.IngredientID] = item
+	}
+
+	existingOrders, err := s.OrderRepository.GetAllOrders()
 	if err != nil {
 		return false, err
 	}
 
-	for _, orderItem := range orderItems {
-		exists, err := s.InventoryRepository.ItemExistsById(orderItem.ProductID)
-		if err != nil {
-			return false, err
-		}
+	for _, existingOrder := range existingOrders {
+		for _, existingOrderItem := range existingOrder.Items {
+			menuItem, err := s.MenuRepository.GetMenuItemById(existingOrderItem.ProductID)
+			if err != nil {
+				return false, err
+			}
 
-		if !exists {
-			return false, ErrOrderProductNotFound
-		}
-
-		for _, inventoryItem := range inventoryItem {
-			if orderItem.ProductID == inventoryItem.IngredientID {
-				if orderItem.Quantity > int(inventoryItem.Quantity) {
-					return false, ErrNotEnoughInventoryQuantity
+			for _, ingredient := range menuItem.Ingredients {
+				inventoryItem, exists := inventoryMap[ingredient.IngredientID]
+				if exists {
+					reservedQuantity := ingredient.Quantity * float64(existingOrderItem.Quantity)
+					inventoryItem.Quantity -= reservedQuantity
+					inventoryMap[ingredient.IngredientID] = inventoryItem
 				}
 			}
 		}
 	}
 
+	menuMap := make(map[string]models.MenuItem)
+	menuItems, err := s.MenuRepository.GetAllMenuItems()
+	if err != nil {
+		return false, err
+	}
+	for _, item := range menuItems {
+		menuMap[item.ID] = item
+	}
+
+	for _, orderItem := range orderItems {
+		menuItem, exists := menuMap[orderItem.ProductID]
+		if !exists {
+			return false, ErrOrderProductNotFound
+		}
+
+		for _, ingredient := range menuItem.Ingredients {
+			inventoryItem, exists := inventoryMap[ingredient.IngredientID]
+			if !exists {
+				return false, ErrInventoryItemNotFound
+			}
+
+			requiredQuantity := ingredient.Quantity * float64(orderItem.Quantity)
+			if requiredQuantity > inventoryItem.Quantity {
+				return false, ErrNotEnoughInventoryQuantity
+			}
+		}
+	}
+
 	return true, nil
+}
+
+func (s *orderService) ReduceIngredients(orderItems []models.OrderItem) error {
+	inventoryMap := make(map[string]models.InventoryItem)
+	inventoryItems, err := s.InventoryRepository.GetAllItems()
+	if err != nil {
+		return err
+	}
+
+	for _, item := range inventoryItems {
+		inventoryMap[item.IngredientID] = item
+	}
+
+	menuMap := make(map[string]models.MenuItem)
+	menuItems, err := s.MenuRepository.GetAllMenuItems()
+	if err != nil {
+		return err
+	}
+	for _, item := range menuItems {
+		menuMap[item.ID] = item
+	}
+
+	for _, orderItem := range orderItems {
+		menuItem, exists := menuMap[orderItem.ProductID]
+		if !exists {
+			return ErrOrderProductNotFound
+		}
+
+		for _, ingredient := range menuItem.Ingredients {
+			inventoryItem, exists := inventoryMap[ingredient.IngredientID]
+			if !exists {
+				return ErrInventoryItemNotFound
+			}
+
+			requiredQuantity := ingredient.Quantity * float64(orderItem.Quantity)
+			if requiredQuantity > inventoryItem.Quantity {
+				return ErrNotEnoughInventoryQuantity
+			}
+
+			inventoryItem.Quantity -= requiredQuantity
+			inventoryMap[ingredient.IngredientID] = inventoryItem
+		}
+	}
+
+	var updatedItems []models.InventoryItem
+	for _, item := range inventoryMap {
+		updatedItems = append(updatedItems, item)
+	}
+
+	if err := s.InventoryRepository.SaveItems(updatedItems); err != nil {
+		return err
+	}
+
+	return nil
 }

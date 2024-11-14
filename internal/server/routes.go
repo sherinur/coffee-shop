@@ -100,12 +100,17 @@ func (s *Server) registerOrderRoutes() {
 		s.logger.PrintWarnMsg("Failed to create order repository")
 	}
 
+	menuRepository := dal.NewMenuRepository(s.config.menu_file)
+	if menuRepository == nil {
+		s.logger.PrintErrorMsg("Failed to create menu repository")
+	}
+
 	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
 	if inventoryRepository == nil {
 		s.logger.PrintWarnMsg("Failed to create inventory repository")
 	}
 
-	orderService := service.NewOrderService(orderRepository, inventoryRepository)
+	orderService := service.NewOrderService(orderRepository, menuRepository, inventoryRepository)
 	if orderService == nil {
 		s.logger.PrintWarnMsg("Failed to create order service")
 	}
