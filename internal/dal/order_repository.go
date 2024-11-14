@@ -14,6 +14,7 @@ import (
 type OrderRepository interface {
 	AddOrder(order models.Order) (models.Order, error)
 	GetAllOrders() ([]models.Order, error)
+	GetOrdersByStatus(status string) ([]models.Order, error)
 	GetOrderById(id string) (models.Order, error)
 	DeleteOrderById(id string) error
 	SaveOrders(orders []models.Order) error
@@ -190,4 +191,20 @@ func (r *orderRepository) RewriteOrder(id string, newOrder models.Order) error {
 	}
 
 	return nil
+}
+
+func (r *orderRepository) GetOrdersByStatus(status string) ([]models.Order, error) {
+	orders, err := r.GetAllOrders()
+	if err != nil {
+		return []models.Order{}, err
+	}
+
+	closedOrders := []models.Order{}
+	for _, order := range orders {
+		if order.Status == status {
+			closedOrders = append(closedOrders, order)
+		}
+	}
+
+	return closedOrders, nil
 }

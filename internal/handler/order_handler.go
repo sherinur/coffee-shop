@@ -23,6 +23,7 @@ type OrderHandler interface {
 	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)
+	WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request)
 }
 
 type orderHandler struct {
@@ -74,6 +75,13 @@ func (h *orderHandler) WriteErrorResponse(statusCode int, err error, w http.Resp
 	}
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
 	h.WriteJSONResponse(statusCode, errorJSON, w, r)
+}
+
+func (h *orderHandler) WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request) {
+	h.logger.PrintDebugMsg(message)
+
+	infoJSON := &models.InfoResponse{Message: message}
+	h.WriteJSONResponse(statusCode, infoJSON, w, r)
 }
 
 func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,7 @@ type ReportHandler interface {
 	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
 	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)
+	WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request)
 }
 
 type reportHandler struct {
@@ -51,28 +52,35 @@ func (h *reportHandler) WriteJSONResponse(statusCode int, jsonResponse any, w ht
 }
 
 func (h *reportHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
-	// TODO: if its statusCode == 500 -> add ERROR log
-	// TODO: in other cases 		  -> print DEBUG log
-	// TODO: find case to add WARNING log (высосать из пальца)
-
-	switch statusCode {
-	case http.StatusInternalServerError:
+	if statusCode/100 >= 5 {
 		h.logger.PrintErrorMsg(err.Error())
-	case http.StatusBadRequest,
-		http.StatusNotFound,
-		http.StatusUnsupportedMediaType,
-		http.StatusConflict:
-
+	} else {
 		h.logger.PrintDebugMsg(err.Error())
 	}
+
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
 	h.WriteJSONResponse(statusCode, errorJSON, w, r)
 }
 
+func (h *reportHandler) WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request) {
+	h.logger.PrintDebugMsg(message)
+
+	infoJSON := &models.InfoResponse{Message: message}
+	h.WriteJSONResponse(statusCode, infoJSON, w, r)
+}
+
 func (h *reportHandler) GetTotalSales(w http.ResponseWriter, r *http.Request) {
 	// TODO: implement logic to Retrieve total sales.
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Retrieving total sales."))
+
+	totalSales, err := h.ReportService.GetTotalSales()
+	if err != nil {
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		return
+	}
+
+	totalSalesJSON := &models.TotalSales{TotalSales: totalSales}
+
+	h.WriteJSONResponse(http.StatusOK, totalSalesJSON, w, r)
 }
 
 func (h *reportHandler) GetPopularItems(w http.ResponseWriter, r *http.Request) {
