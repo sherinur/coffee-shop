@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"hot-coffee/internal/service"
+	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 	"hot-coffee/pkg/logger"
 )
@@ -19,11 +20,6 @@ type OrderHandler interface {
 	UpdateOrder(w http.ResponseWriter, r *http.Request)
 	DeleteOrder(w http.ResponseWriter, r *http.Request)
 	CloseOrder(w http.ResponseWriter, r *http.Request)
-
-	WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
-	WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request)
-	WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request)
-	WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request)
 }
 
 type orderHandler struct {
@@ -35,58 +31,9 @@ func NewOrderHandler(s service.OrderService, l *logger.Logger) *orderHandler {
 	return &orderHandler{OrderService: s, logger: l}
 }
 
-func (h *orderHandler) WriteRawJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(statusCode)
-
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(jsonResponse)
-	if err != nil {
-		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-	}
-}
-
-func (h *orderHandler) WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(statusCode)
-
-	w.Header().Set("Content-Type", "application/json")
-	formattedJSON, err := json.MarshalIndent(jsonResponse, "", " ")
-	if err != nil {
-		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-		return
-	}
-
-	w.Write(formattedJSON)
-}
-
-func (h *orderHandler) WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
-	// TODO: if its statusCode == 500 -> add ERROR log
-	// TODO: in other cases 		  -> print DEBUG log
-	// TODO: find case to add WARNING log (высосать из пальца)
-
-	switch statusCode {
-	case http.StatusInternalServerError:
-		h.logger.PrintErrorMsg(err.Error())
-	case http.StatusBadRequest,
-		http.StatusNotFound,
-		http.StatusUnsupportedMediaType,
-		http.StatusConflict:
-
-		h.logger.PrintDebugMsg(err.Error())
-	}
-	errorJSON := &models.ErrorResponse{Error: err.Error()}
-	h.WriteJSONResponse(statusCode, errorJSON, w, r)
-}
-
-func (h *orderHandler) WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request) {
-	h.logger.PrintDebugMsg(message)
-
-	infoJSON := &models.InfoResponse{Message: message}
-	h.WriteJSONResponse(statusCode, infoJSON, w, r)
-}
-
 func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
 	defer r.Body.Close()
@@ -95,10 +42,10 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&order); err != nil {
 		if err == io.EOF {
-			h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+			utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 			return
 		}
-		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
 
@@ -108,7 +55,7 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case service.ErrNotUniqueOrder:
-			h.WriteErrorResponse(http.StatusConflict, err, w, r)
+			utils.WriteErrorResponse(http.StatusConflict, err, w, r)
 			return
 		case service.ErrNotValidOrderID,
 			service.ErrNotValidOrderCustomerName,
@@ -120,21 +67,21 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 			service.ErrNotValidQuantity,
 			service.ErrNotValidOrderProductID,
 			service.ErrNotEnoughInventoryQuantity:
-			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		case service.ErrOrderProductNotFound,
 			service.ErrInventoryItemNotFound:
-			h.WriteErrorResponse(http.StatusUnprocessableEntity, err, w, r)
+			utils.WriteErrorResponse(http.StatusUnprocessableEntity, err, w, r)
 			return
 		default:
-			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
 
 	h.logger.PrintInfoMsg("Successfully created new order: %+v", order)
 
-	h.WriteJSONResponse(http.StatusCreated, order, w, r)
+	utils.WriteJSONResponse(http.StatusCreated, order, w, r)
 }
 
 func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +90,7 @@ func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		default:
-			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
@@ -158,17 +105,17 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := r.PathValue("id")
 
 	if len(orderId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
 		return
 	}
 
 	data, err := h.OrderService.RetrieveOrder(orderId)
 	if err != nil {
 		if err.Error() == "order not found" {
-			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
 			return
 		} else {
-			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
@@ -177,7 +124,7 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(data)
 	if err != nil {
-		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+		utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		h.logger.PrintErrorMsg("Failed to write response: %v", err)
 		return
 	}
@@ -186,21 +133,21 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 
 func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
 	defer r.Body.Close()
 
 	orderId := r.PathValue("id")
 	if len(orderId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
 		return
 	}
 
 	var order models.Order
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&order); err != nil {
-		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		return
 	}
 
@@ -208,7 +155,7 @@ func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case service.ErrNoItem:
-			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
 			return
 		case service.ErrNotValidOrderID,
 			service.ErrNotValidOrderCustomerName,
@@ -222,10 +169,10 @@ func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 			service.ErrOrderProductNotFound,
 			service.ErrNotEnoughInventoryQuantity,
 			service.ErrInventoryItemNotFound:
-			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		default:
-			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
 		}
 	}
@@ -238,14 +185,14 @@ func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := r.PathValue("id")
 
 	if len(orderId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
 		return
 	}
 
 	err := h.OrderService.DeleteOrder(orderId)
 	if err != nil {
 		if err.Error() == "order not found" {
-			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
 			return
 		}
 	}
@@ -260,7 +207,7 @@ func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := r.PathValue("id")
 
 	if len(orderId) == 0 {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
 		return
 	}
 
@@ -268,7 +215,7 @@ func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		default:
-			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 		}
 	}
 

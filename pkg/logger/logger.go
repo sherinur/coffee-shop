@@ -6,21 +6,25 @@ import (
 	"net/http"
 )
 
-// TODO: Rewrite log to slog.
-// TODO: Check what type of logs we can print in this project and оставить разрешенные
-
 // ? TODO: Save logs to the ./logs/triple-s.log path (OPTIONAL)
+
 type iLogger interface {
-	PrintfInfoMsg(string, ...interface{})
-	PrintfDebugMsg(string, ...interface{})
-	PrintfErrorMsg(string, ...interface{})
-	PrintfWarnMsg(string, ...interface{})
-	LogRequestMiddleware(http.Handler) http.Handler
+	PrintInfoMsg(mes string, args ...interface{})
+	PrintDebugMsg(mes string, args ...interface{})
+	PrintErrorMsg(mes string, args ...interface{})
+	PrintWarnMsg(mes string, args ...interface{})
+	LogRequestMiddleware(next http.Handler) http.Handler
 }
 
 type Logger struct {
 	debugMode    bool
 	bracketsMode bool
+}
+
+var LOGGER *Logger
+
+func InitLogger(enableDebug, enableInfo bool) {
+	LOGGER = NewLogger(enableDebug, enableInfo)
 }
 
 func NewLogger(debugMode bool, bracketsMode bool) *Logger {

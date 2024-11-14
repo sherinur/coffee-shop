@@ -154,7 +154,12 @@ func (s *Server) registerReportRoutes() {
 		s.logger.PrintWarnMsg("Failed to create inventory repository")
 	}
 
-	reportService := service.NewReportService(orderRepository, menuRepository, inventoryRepository)
+	reportRepository := dal.NewReportRepository(s.config.report_file)
+	if reportRepository == nil {
+		s.logger.PrintWarnMsg("Failed to create report repository")
+	}
+
+	reportService := service.NewReportService(orderRepository, menuRepository, inventoryRepository, reportRepository)
 	if reportService == nil {
 		s.logger.PrintWarnMsg("Failed to create report service")
 	}

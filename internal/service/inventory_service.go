@@ -47,7 +47,7 @@ func ValidateItem(i models.InventoryItem) error {
 		return ErrNotValidIngredientName
 	}
 
-	if i.Quantity <= 0 {
+	if i.Quantity < 0 || i.Quantity == -0 {
 		return ErrNotValidQuantity
 	}
 

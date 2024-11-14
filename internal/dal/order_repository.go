@@ -15,6 +15,8 @@ type OrderRepository interface {
 	AddOrder(order models.Order) (models.Order, error)
 	GetAllOrders() ([]models.Order, error)
 	GetOrdersByStatus(status string) ([]models.Order, error)
+	GetClosedOrders() ([]models.Order, error)
+	GetOpenOrders() ([]models.Order, error)
 	GetOrderById(id string) (models.Order, error)
 	DeleteOrderById(id string) error
 	SaveOrders(orders []models.Order) error
@@ -217,4 +219,12 @@ func (r *orderRepository) GetOrdersByStatus(status string) ([]models.Order, erro
 	}
 
 	return closedOrders, nil
+}
+
+func (r *orderRepository) GetClosedOrders() ([]models.Order, error) {
+	return r.GetOrdersByStatus("closed")
+}
+
+func (r *orderRepository) GetOpenOrders() ([]models.Order, error) {
+	return r.GetOrdersByStatus("open")
 }

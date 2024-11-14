@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"hot-coffee/internal/server"
+	"hot-coffee/pkg/logger"
 
 	. "hot-coffee/internal/utils"
 )
@@ -31,6 +32,8 @@ func init() {
 	flag.StringVar(&dir, "dir", "./data", "Path to the directory")
 	flag.StringVar(&configPath, "cfg", "configs/server.yaml", "Path to the config file")
 
+	logger.InitLogger(true, true)
+
 	flag.Usage = CustomUsage
 }
 
@@ -50,14 +53,17 @@ func validate() error {
 func main() {
 	flag.Parse()
 
-	validate()
-
+	err := validate()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	port = ":" + port
 
 	cfg := server.NewConfig(configPath, port, dir)
 
-	apiServer := server.New(cfg)
-	err := apiServer.Start()
+	apiServer := server.New(cfg, logger.LOGGER)
+	err = apiServer.Start()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -13,10 +13,10 @@ type Server struct {
 }
 
 // New server
-func New(config *Config) *Server {
+func New(config *Config, LOGGER *logger.Logger) *Server {
 	s := &Server{
 		config: config,
-		logger: logger.NewLogger(true, true),
+		logger: LOGGER,
 		mux:    http.NewServeMux(),
 	}
 

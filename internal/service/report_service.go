@@ -1,14 +1,14 @@
 package service
 
 import (
-	"fmt"
+	"sort"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )
 
 type ReportService interface {
-	GetTotalSales() (float64, error)
+	GetTotalSales() (models.TotalSales, error)
 	GetPopularItems() ([]models.MenuItem, error)
 }
 
@@ -16,53 +16,60 @@ type reportService struct {
 	orderRepository     dal.OrderRepository
 	menuReposipory      dal.MenuRepository
 	inventoryRepository dal.InventoryRepository
+	reportRepository    dal.ReportRepository
 }
 
-func NewReportService(o dal.OrderRepository, m dal.MenuRepository, i dal.InventoryRepository) *reportService {
-	if o == nil || m == nil || i == nil {
+func NewReportService(o dal.OrderRepository, m dal.MenuRepository, i dal.InventoryRepository, r dal.ReportRepository) *reportService {
+	if o == nil || m == nil || i == nil || r == nil {
 		return nil
 	}
-	return &reportService{orderRepository: o, menuReposipory: m, inventoryRepository: i}
+	return &reportService{orderRepository: o, menuReposipory: m, inventoryRepository: i, reportRepository: r}
 }
 
-// TODO: Write comments
-func (rs *reportService) GetTotalSales() (float64, error) {
-	var totalSales float64
+func (rs *reportService) GetTotalSales() (models.TotalSales, error) {
+	return rs.reportRepository.GetTotalSales()
+}
 
-	// Retriving successfull (closed) orders from the repo
-	orders, err := rs.orderRepository.GetOrdersByStatus("closed")
+func (rs *reportService) GetPopularItems() ([]models.MenuItem, error) {
+	orders, err := rs.orderRepository.GetClosedOrders()
 	if err != nil {
-		return totalSales, err
+		return nil, err
 	}
 
-	// Making a slice of ordered items
-	menuItems, err := rs.menuReposipory.GetAllMenuItems()
-	if err != nil {
-		return totalSales, err
-	}
-	menuMap := make(map[string]models.MenuItem)
-	for _, item := range menuItems {
-		menuMap[item.ID] = item
-	}
-
-	// Iterating and summing the prices of ordered items
+	frequencyMap := make(map[string]int)
 	for _, order := range orders {
 		for _, item := range order.Items {
-			menuItem, exists := menuMap[item.ProductID]
-			if !exists {
-				return totalSales, fmt.Errorf("menu item with ID %s not found", item.ProductID)
-			}
-			totalSales += menuItem.Price * float64(item.Quantity)
+			frequencyMap[item.ProductID] += item.Quantity
 		}
 	}
 
-	return totalSales, nil
-}
+	type menuItemCount struct {
+		ID    string
+		Count int
+	}
 
-// TODO: Write comments
+	menuItemsCount := []menuItemCount{}
+	for id, count := range frequencyMap {
+		menuItemsCount = append(menuItemsCount, menuItemCount{ID: id, Count: count})
+	}
 
-func (rs *reportService) GetPopularItems() ([]models.MenuItem, error) {
-	// TODO:  Implement logic for popular items
+	sort.Slice(menuItemsCount, func(i, j int) bool {
+		return menuItemsCount[i].Count > menuItemsCount[j].Count
+	})
 
-	return []models.MenuItem{}, nil
+	topMenuItemsCount := menuItemsCount
+	if len(menuItemsCount) > 10 {
+		topMenuItemsCount = menuItemsCount[:10]
+	}
+
+	popularItems := []models.MenuItem{}
+	for _, menuItem := range topMenuItemsCount {
+		item, err := rs.menuReposipory.GetMenuItemById(menuItem.ID)
+		if err != nil {
+			return nil, err
+		}
+		popularItems = append(popularItems, item)
+	}
+
+	return popularItems, nil
 }

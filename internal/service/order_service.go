@@ -151,7 +151,7 @@ func (s *orderService) UpdateOrder(id string, order models.Order) error {
 	if order.ID == "" {
 		order.ID = id
 	}
-	order.Status = "Open"
+	order.Status = "open"
 
 	err := s.OrderRepository.RewriteOrder(id, order)
 	if err != nil {
@@ -224,6 +224,9 @@ func (s *orderService) IsInventorySufficient(orderItems []models.OrderItem) (boo
 	}
 
 	for _, existingOrder := range existingOrders {
+		if existingOrder.Status == "closed" {
+			continue
+		}
 		for _, existingOrderItem := range existingOrder.Items {
 			menuItem, err := s.MenuRepository.GetMenuItemById(existingOrderItem.ProductID)
 			if err != nil {
