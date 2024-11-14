@@ -102,6 +102,22 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		case service.ErrNotUniqueOrder:
 			h.WriteErrorResponse(http.StatusConflict, err, w, r)
 			return
+		case service.ErrNotValidOrderID,
+			service.ErrNotValidOrderCustomerName,
+			service.ErrNotValidStatusField,
+			service.ErrNotValidCreatedAt,
+			service.ErrNotValidOrderItems,
+			service.ErrNotValidIngredientID,
+			service.ErrDuplicateOrderItems,
+			service.ErrNotValidQuantity,
+			service.ErrNotValidOrderProductID,
+			service.ErrNotEnoughInventoryQuantity:
+			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			return
+		case service.ErrOrderProductNotFound,
+			service.ErrInventoryItemNotFound:
+			h.WriteErrorResponse(http.StatusUnprocessableEntity, err, w, r)
+			return
 		default:
 			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 			return
@@ -161,11 +177,53 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("id")
+	if r.Body == nil {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		return
+	}
+	defer r.Body.Close()
 
-	// TODO: implement logic to Update an existing order by ID.
+	orderId := r.PathValue("id")
+	if len(orderId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
+		return
+	}
+
+	var order models.Order
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&order); err != nil {
+		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		return
+	}
+
+	err := h.OrderService.UpdateOrder(orderId, order)
+	if err != nil {
+		switch err {
+		case service.ErrNoItem:
+			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
+			return
+		case service.ErrNotValidOrderID,
+			service.ErrNotValidOrderCustomerName,
+			service.ErrNotValidStatusField,
+			service.ErrNotValidCreatedAt,
+			service.ErrNotValidOrderItems,
+			service.ErrNotValidIngredientID,
+			service.ErrDuplicateOrderItems,
+			service.ErrNotValidQuantity,
+			service.ErrNotValidOrderProductID,
+			service.ErrOrderProductNotFound,
+			service.ErrNotEnoughInventoryQuantity,
+			service.ErrInventoryItemNotFound:
+			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+			return
+		default:
+			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Update an existing order by ID: " + orderId))
+	// w.Write([]byte("There will be Update an existing order by ID: " + orderId))
 }
 
 func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
@@ -190,9 +248,22 @@ func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
+	// TODO: implement logic to Close an order by ID.
 	orderId := r.PathValue("id")
 
-	// TODO: implement logic to Close an order by ID.
+	if len(orderId) == 0 {
+		h.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
+		return
+	}
+
+	err := h.OrderService.CloseOrder(orderId)
+	if err != nil {
+		switch err {
+		default:
+			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("There will be Close an order by ID: " + orderId))
 }

@@ -17,7 +17,7 @@ type InventoryRepository interface {
 	GetItemById(id string) (models.InventoryItem, error)
 	SaveItems(inventoryItems []models.InventoryItem) error
 	ItemExists(i models.InventoryItem) (bool, error)
-	ItemExistsById(id string) (bool, error)
+	// ItemExistsById(id string) (bool, error)
 	RewriteItem(id string, newItem models.InventoryItem) error
 	DeleteItemByID(id string) error
 }
@@ -38,16 +38,6 @@ func (r *inventoryRepository) AddItem(i models.InventoryItem) (models.InventoryI
 	items, err := r.GetAllItems()
 	if err != nil {
 		return models.InventoryItem{}, err
-	}
-
-	itemsID := []string{}
-
-	for _, item := range items {
-		itemsID = append(itemsID, item.IngredientID)
-	}
-
-	if i.IngredientID == "" {
-		i.IngredientID = utils.GenerateNewID(itemsID, "ingredient")
 	}
 
 	items = append(items, i)
@@ -188,20 +178,20 @@ func (r *inventoryRepository) ItemExists(i models.InventoryItem) (bool, error) {
 	return false, nil
 }
 
-func (r *inventoryRepository) ItemExistsById(id string) (bool, error) {
-	inventoryItems, err := r.GetAllItems()
-	if err != nil {
-		return false, err
-	}
+// func (r *inventoryRepository) ItemExistsById(id string) (bool, error) {
+// 	inventoryItems, err := r.GetAllItems()
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-	for _, item := range inventoryItems {
-		if item.IngredientID == id {
-			return true, nil
-		}
-	}
+// 	for _, item := range inventoryItems {
+// 		if item.IngredientID == id {
+// 			return true, nil
+// 		}
+// 	}
 
-	return false, nil
-}
+// 	return false, nil
+// }
 
 // DeleteInventoryItem deletes an inventory item by its ID.
 // Returns nil if the deletion is successful.
