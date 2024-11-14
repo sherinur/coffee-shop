@@ -140,8 +140,8 @@ func (s *orderService) RetrieveOrder(id string) ([]byte, error) {
 }
 
 func (s *orderService) UpdateOrder(id string, order models.Order) error {
-	// TODO: Validate the order update
-	// TODO: Call RewriteOrder method from repository ->  err := s.OrderRepository.RewriteOrder(id, order)
+	// ! TODO: Think about created time
+
 	if err := ValidateOrder(order); err != nil {
 		return err
 	}
@@ -167,7 +167,6 @@ func (s *orderService) CloseOrder(id string) error {
 	// TODO: После успешного вычитания ингредиентов заказ считается закрытым( "status": "open", -> "status": "closed",), и он больше не будет доступен для изменений (Изменить Update, проверять статус closed or open).
 	// ? TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
 
-	// TODO: Call UpdateOrder or DeleteOrder from repository if needed
 	order, err := s.OrderRepository.GetOrderById(id)
 	if err != nil {
 		return err
@@ -179,6 +178,8 @@ func (s *orderService) CloseOrder(id string) error {
 	}
 
 	order.Status = "closed"
+
+	// TODO: Use report repo and add income to total_sales.json
 
 	err = s.OrderRepository.RewriteOrder(id, order)
 	if err != nil {
