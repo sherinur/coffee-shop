@@ -163,24 +163,23 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 
 	data, err := h.InventoryService.RetrieveInventoryItem(itemId)
 	if err != nil {
-		switch err {
-		case service.ErrNoItem:
+		switch err.Error() {
+		case "item not found":
 			h.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
-			return
 		default:
 			h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
 		}
+		return
 	}
 
 	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
 
 	// Send an HTTP status code 200 (OK) and write the retrieved item data to the response body.
-
 	_, err = w.Write(data)
 	if err != nil {
-		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+
+		h.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

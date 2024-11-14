@@ -36,9 +36,9 @@ func NewInventoryService(repo dal.InventoryRepository) *inventoryService {
 // - ErrNotValidQuantity if the Quantity is zero or negative.
 // - ErrNotValidUnit if the Unit is empty.
 func ValidateItem(i models.InventoryItem) error {
-	// if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
-	// 	return ErrNotValidIngredientID
-	// }
+	if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
+		return ErrNotValidIngredientID
+	}
 	if strings.Contains(i.IngredientID, " ") {
 		return ErrNotValidIngredientID
 	}

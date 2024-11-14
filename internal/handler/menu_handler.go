@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"hot-coffee/internal/service"
@@ -75,7 +76,6 @@ func (h *menuHandler) WriteErrorResponse(statusCode int, err error, w http.Respo
 // It processes the request body, validates the input, and calls the service layer to add the item.
 func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
-		h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
 		return
 	}
 	defer r.Body.Close()
@@ -83,7 +83,12 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 	var item models.MenuItem
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&item); err != nil {
-		h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		switch err {
+		case io.EOF:
+			h.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
+		default:
+			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+		}
 		return
 	}
 
@@ -101,7 +106,8 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 			service.ErrNotValidPrice,
 			service.ErrNotValidIngredientID,
 			service.ErrNotValidQuantity,
-			service.ErrDuplicateMenuIngredients:
+			service.ErrDuplicateMenuIngredients,
+			service.ErrNotValidIngredints:
 			h.WriteErrorResponse(http.StatusBadRequest, err, w, r)
 			return
 		default:

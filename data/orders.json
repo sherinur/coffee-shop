@@ -1,0 +1,14 @@
+[
+ {
+  "order_id": "order1",
+  "customer_name": "John Doe",
+  "items": [
+   {
+    "product_id": "blueberries",
+    "quantity": 1
+   }
+  ],
+  "status": "Open",
+  "created_at": "2024-11-14T13:18:44+05:00"
+ }
+]
