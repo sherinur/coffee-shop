@@ -92,6 +92,7 @@ func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Requ
 
 	h.logger.PrintDebugMsg("Retrieved inventory items")
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
@@ -119,6 +120,7 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
 
 	// Send an HTTP status code 200 (OK) and write the retrieved item data to the response body.
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
 		h.logger.PrintErrorMsg("Failed to write response: %v", err)

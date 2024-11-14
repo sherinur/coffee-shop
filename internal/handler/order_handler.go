@@ -97,6 +97,7 @@ func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.PrintDebugMsg("Retrieved orders")
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
@@ -122,6 +123,7 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.PrintDebugMsg("Retrieved order with ID: %s", orderId)
 
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
 		utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)

@@ -94,11 +94,11 @@ func (h *menuHandler) GetMenuItems(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.PrintDebugMsg("Retrieved Menu items")
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 
-// TODO: проверить
 // GetMenuItem handles the HTTP request to retrieve a specific menu item by its ID.
 // It checks if the item ID is valid, calls the service layer to fetch the menu item,
 // and returns the result to the client. In case of errors, it responds with the appropriate error message.
@@ -124,6 +124,7 @@ func (h *menuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.PrintDebugMsg("Retrieved menu item with ID: %s", itemId)
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
