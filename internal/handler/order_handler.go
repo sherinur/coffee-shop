@@ -178,7 +178,6 @@ func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	// w.Write([]byte("There will be Update an existing order by ID: " + orderId))
 }
 
 func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
@@ -220,5 +219,4 @@ func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("There will be Close an order by ID: " + orderId))
 }

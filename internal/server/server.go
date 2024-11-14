@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"hot-coffee/internal/utils"
 	"hot-coffee/pkg/logger"
 )
 
@@ -60,6 +61,11 @@ func (s *Server) Start() error {
 	// sig := <-signalChannel
 	// s.logger.PrintInfoMsg(fmt.Sprintf("Received signal: %s. Shutting down...", sig))
 	// return s.Shutdown(server)
+
+	utils.CreateFile(s.config.inventory_file)
+	utils.CreateFile(s.config.menu_file)
+	utils.CreateFile(s.config.order_file)
+	utils.CreateFile(s.config.report_file)
 
 	mux := s.RequestMiddleware(s.mux)
 

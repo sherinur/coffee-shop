@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // FileExists checks if a file or directory exists at the specified path.
@@ -209,7 +210,7 @@ func ValidateDirName(name string) error {
 func ValidatePath(path string) error {
 	cleanPath := filepath.Clean(path)
 
-	dirs := filepath.SplitList(cleanPath)
+	dirs := strings.Split(cleanPath, "/")
 	for _, dir := range dirs {
 		if dir == "" {
 			continue
