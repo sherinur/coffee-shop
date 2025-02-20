@@ -41,17 +41,17 @@ func (s *Server) registerInventoryRoutes() {
 	// Interfaces
 	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
 	if inventoryRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create inventory repository")
+		s.log.Warn("Failed to create inventory repository")
 	}
 
 	inventoryService := service.NewInventoryService(inventoryRepository)
 	if inventoryService == nil {
-		s.logger.PrintWarnMsg("Failed to create inventory service")
+		s.log.Warn("Failed to create inventory service")
 	}
 
-	inventoryHandler := handler.NewInventoryHandler(inventoryService, s.logger)
+	inventoryHandler := handler.NewInventoryHandler(inventoryService, s.log)
 	if inventoryHandler == nil {
-		s.logger.PrintWarnMsg("Failed to create inventory handler")
+		s.log.Warn("Failed to create inventory handler")
 	}
 
 	// Routes
@@ -62,24 +62,24 @@ func (s *Server) registerInventoryRoutes() {
 	s.mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
 	// logging
-	s.logger.PrintInfoMsg("Inventory routes is registered successfully")
+	s.log.Info("Inventory routes is registered successfully")
 }
 
 func (s *Server) registerMenuRoutes() {
 	// Interfaces
 	menuRepository := dal.NewMenuRepository(s.config.menu_file)
 	if menuRepository == nil {
-		s.logger.PrintErrorMsg("Failed to create menu repository")
+		s.log.Error("Failed to create menu repository")
 	}
 
 	menuService := service.NewMenuService(menuRepository)
 	if menuService == nil {
-		s.logger.PrintErrorMsg("Failed to create menu service")
+		s.log.Error("Failed to create menu service")
 	}
 
-	menuHandler := handler.NewMenuHandler(menuService, s.logger)
+	menuHandler := handler.NewMenuHandler(menuService, s.log)
 	if menuHandler == nil {
-		s.logger.PrintErrorMsg("Failed to create  handler")
+		s.log.Error("Failed to create  handler")
 	}
 
 	// Routes
@@ -90,39 +90,39 @@ func (s *Server) registerMenuRoutes() {
 	s.mux.HandleFunc("DELETE /menu/{id}", menuHandler.DeleteMenuItem)
 
 	// logging
-	s.logger.PrintInfoMsg("Menu routes is registered successfully")
+	s.log.Info("Menu routes is registered successfully")
 }
 
 func (s *Server) registerOrderRoutes() {
 	// Orders
 	orderRepository := dal.NewOrderRepository(s.config.order_file)
 	if orderRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create order repository")
+		s.log.Warn("Failed to create order repository")
 	}
 
 	menuRepository := dal.NewMenuRepository(s.config.menu_file)
 	if menuRepository == nil {
-		s.logger.PrintErrorMsg("Failed to create menu repository")
+		s.log.Error("Failed to create menu repository")
 	}
 
 	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
 	if inventoryRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create inventory repository")
+		s.log.Warn("Failed to create inventory repository")
 	}
 
 	reportRepository := dal.NewReportRepository(s.config.report_file)
 	if reportRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create report repository")
+		s.log.Warn("Failed to create report repository")
 	}
 
 	orderService := service.NewOrderService(orderRepository, menuRepository, inventoryRepository, reportRepository)
 	if orderService == nil {
-		s.logger.PrintWarnMsg("Failed to create order service")
+		s.log.Warn("Failed to create order service")
 	}
 
-	orderHandler := handler.NewOrderHandler(orderService, s.logger)
+	orderHandler := handler.NewOrderHandler(orderService, s.log)
 	if orderHandler == nil {
-		s.logger.PrintWarnMsg("Failed to create order handler")
+		s.log.Warn("Failed to create order handler")
 	}
 
 	// Order routes
@@ -134,39 +134,39 @@ func (s *Server) registerOrderRoutes() {
 	s.mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
 
 	// logging
-	s.logger.PrintInfoMsg("Order routes is registered successfully")
+	s.log.Info("Order routes is registered successfully")
 }
 
 func (s *Server) registerReportRoutes() {
 	// Interfaces
 	orderRepository := dal.NewOrderRepository(s.config.order_file)
 	if orderRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create order repository")
+		s.log.Warn("Failed to create order repository")
 	}
 
 	menuRepository := dal.NewMenuRepository(s.config.menu_file)
 	if menuRepository == nil {
-		s.logger.PrintErrorMsg("Failed to create menu repository")
+		s.log.Error("Failed to create menu repository")
 	}
 
 	inventoryRepository := dal.NewInventoryRepository(s.config.inventory_file)
 	if inventoryRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create inventory repository")
+		s.log.Warn("Failed to create inventory repository")
 	}
 
 	reportRepository := dal.NewReportRepository(s.config.report_file)
 	if reportRepository == nil {
-		s.logger.PrintWarnMsg("Failed to create report repository")
+		s.log.Warn("Failed to create report repository")
 	}
 
 	reportService := service.NewReportService(orderRepository, menuRepository, inventoryRepository, reportRepository)
 	if reportService == nil {
-		s.logger.PrintWarnMsg("Failed to create report service")
+		s.log.Warn("Failed to create report service")
 	}
 
-	reportHandler := handler.NewReportHandler(reportService, s.logger)
+	reportHandler := handler.NewReportHandler(reportService, s.log)
 	if reportService == nil {
-		s.logger.PrintWarnMsg("Failed to create report handler")
+		s.log.Warn("Failed to create report handler")
 	}
 
 	// Aggregation routes
@@ -174,7 +174,7 @@ func (s *Server) registerReportRoutes() {
 	s.mux.HandleFunc("GET /reports/popular-items", reportHandler.GetPopularItems)
 
 	// logging
-	s.logger.PrintInfoMsg("Report routes is registered successfully")
+	s.log.Info("Report routes is registered successfully")
 }
 
 func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
@@ -186,7 +186,7 @@ func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.logger.PrintInfoMsg(fmt.Sprintf("Request %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr))
+		s.log.Info(fmt.Sprintf("Request %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr))
 		if !allowedMethods[r.Method] {
 			return
 		}

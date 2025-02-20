@@ -1,23 +1,23 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/utils"
-	"hot-coffee/pkg/logger"
 )
 
 type Server struct {
 	config *Config
-	logger *logger.Logger
+	log    *slog.Logger
 	mux    *http.ServeMux
 }
 
 // New server
-func New(config *Config, LOGGER *logger.Logger) *Server {
+func New(config *Config, logger *slog.Logger) *Server {
 	s := &Server{
 		config: config,
-		logger: LOGGER,
+		log:    logger,
 		mux:    http.NewServeMux(),
 	}
 
@@ -29,9 +29,9 @@ func New(config *Config, LOGGER *logger.Logger) *Server {
 
 // Start the server
 func (s *Server) Start() error {
-	s.logger.PrintInfoMsg("Starting server on port " + s.config.port)
-	s.logger.PrintInfoMsg("Path to the directory set: " + s.config.data_directory)
-	s.logger.PrintInfoMsg("Path to the config set: " + s.config.cfg_file)
+	s.log.Info("Starting server on port " + s.config.port)
+	s.log.Info("Path to the directory set: " + s.config.data_directory)
+	s.log.Info("Path to the config set: " + s.config.cfg_file)
 
 	// TODO: Провести проверку всех зависимостей (например, подключение к базе данных)
 	// if !checkDependencies() {
@@ -74,10 +74,10 @@ func (s *Server) Start() error {
 
 // Shutdown the server
 func (s *Server) Shutdown() error {
-	s.logger.PrintInfoMsg("Stopping the server")
+	s.log.Info("Stopping the server")
 
 	// TODO: Write server graceful shutdown method
 
-	s.logger.PrintInfoMsg("Server gracefully stopped")
+	s.log.Info("Server gracefully stopped")
 	return nil
 }

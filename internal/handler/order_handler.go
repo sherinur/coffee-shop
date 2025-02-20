@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/service"
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
-	"hot-coffee/pkg/logger"
 )
 
 type OrderHandler interface {
@@ -24,11 +24,11 @@ type OrderHandler interface {
 
 type orderHandler struct {
 	OrderService service.OrderService
-	logger       *logger.Logger
+	log          *slog.Logger
 }
 
-func NewOrderHandler(s service.OrderService, l *logger.Logger) *orderHandler {
-	return &orderHandler{OrderService: s, logger: l}
+func NewOrderHandler(s service.OrderService, l *slog.Logger) *orderHandler {
+	return &orderHandler{OrderService: s, log: l}
 }
 
 func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.PrintDebugMsg("Creating new order: %+v", order)
+	h.log.Debug("Creating new order", slog.Any("Order", order))
 
 	err := h.OrderService.AddOrder(order)
 	if err != nil {
@@ -79,7 +79,7 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintInfoMsg("Successfully created new order: %+v", order)
+	h.log.Info("Successfully created new order", slog.Any("Order", order))
 
 	utils.WriteJSONResponse(http.StatusCreated, order, w, r)
 }
@@ -95,7 +95,7 @@ func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved orders")
+	h.log.Debug("Retrieved orders")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -121,13 +121,13 @@ func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved order with ID: %s", orderId)
+	h.log.Debug("Retrieved order with ID", slog.String("OrderId", orderId))
 
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
 		utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+		h.log.Error("Failed to write response", "error", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -198,13 +198,12 @@ func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("order with ID: %s successfully deleted", orderId)
+	h.log.Debug("Successfully deleted order with ID ", slog.String("OrderId", orderId))
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement logic to Close an order by ID.
 	orderId := r.PathValue("id")
 
 	if len(orderId) == 0 {

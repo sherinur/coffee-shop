@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/service"
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
-	"hot-coffee/pkg/logger"
 )
 
 type InventoryHandler interface {
@@ -23,11 +23,11 @@ type InventoryHandler interface {
 
 type inventoryHandler struct {
 	InventoryService service.InventoryService
-	logger           *logger.Logger
+	log              *slog.Logger
 }
 
-func NewInventoryHandler(s service.InventoryService, l *logger.Logger) *inventoryHandler {
-	return &inventoryHandler{InventoryService: s, logger: l}
+func NewInventoryHandler(s service.InventoryService, l *slog.Logger) *inventoryHandler {
+	return &inventoryHandler{InventoryService: s, log: l}
 }
 
 // AddInventoryItem handles the HTTP request to add a new inventory item.
@@ -53,6 +53,7 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 	}
 
 	err := h.InventoryService.AddInventoryItem(item)
+	h.log.Debug("Adding new inventory item:", slog.Any("item", item))
 	if err != nil {
 		switch err {
 		case service.ErrNotUniqueID:
@@ -67,16 +68,10 @@ func (h *inventoryHandler) AddInventoryItem(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	h.logger.PrintDebugMsg("Adding new inventory item: %+v", item)
-	h.logger.PrintInfoMsg("Successfully added new inventory item: %+v", item)
+	h.log.Info("Successfully added new inventory item:", slog.Any("item", item))
 
 	utils.WriteJSONResponse(http.StatusCreated, item, w, r)
 }
-
-// 200 OK — запрос был успешно обработан.
-// 201 Created — новый ресурс был успешно создан.
-// 400 Bad Request — ошибка в запросе.
-// 500 Internal Server Error — ошибка на сервере.
 
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
 // It calls the service layer to get the list of inventory items, handles errors, and returns the data in the response.
@@ -90,7 +85,7 @@ func (h *inventoryHandler) GetInventoryItems(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved inventory items")
+	h.log.Debug("Retrieved inventory items")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -117,13 +112,13 @@ func (h *inventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.logger.PrintDebugMsg("Retrieved inventory item with ID: %s", itemId)
+	h.log.Debug("Retrieved inventory item with ID:", slog.String("itemId", itemId))
 
 	// Send an HTTP status code 200 (OK) and write the retrieved item data to the response body.
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
-		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+		h.log.Error("Failed to write response", "error", err)
 
 		utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
 		return
@@ -198,7 +193,7 @@ func (h *inventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	h.logger.PrintDebugMsg("Inventory item with ID: %s successfully deleted", itemId)
+	h.log.Debug("Successfully deleted an inventory item with ID:", slog.String("itemId", itemId))
 
 	w.WriteHeader(http.StatusNoContent)
 }

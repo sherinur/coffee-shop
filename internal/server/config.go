@@ -40,7 +40,7 @@ func NewConfig(configPath, port, dir string) *Config {
 		write_timeout: "4s",
 		idle_timout:   "60s",
 
-		log_file: "./logs/triple-s.log",
+		log_file: "./logs/all.log",
 		cfg_file: "./configs/server.yaml",
 
 		allow_overwrite: true,

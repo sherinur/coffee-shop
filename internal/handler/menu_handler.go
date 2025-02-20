@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"hot-coffee/internal/service"
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
-	"hot-coffee/pkg/logger"
 )
 
 type MenuHandler interface {
@@ -23,11 +23,11 @@ type MenuHandler interface {
 
 type menuHandler struct {
 	MenuService service.MenuService
-	logger      *logger.Logger
+	log         *slog.Logger
 }
 
-func NewMenuHandler(s service.MenuService, l *logger.Logger) *menuHandler {
-	return &menuHandler{MenuService: s, logger: l}
+func NewMenuHandler(s service.MenuService, l *slog.Logger) *menuHandler {
+	return &menuHandler{MenuService: s, log: l}
 }
 
 // AddMenuItem handles the HTTP request to add a new menu item.
@@ -51,7 +51,7 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.PrintDebugMsg("Adding new menu item: %+v", item)
+	h.log.Debug("Adding new menu item", slog.Any("MenuItem", item))
 
 	err := h.MenuService.AddMenuItem(item)
 	if err != nil {
@@ -75,7 +75,7 @@ func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintInfoMsg("Successfully added new menu item: %+v", item)
+	h.log.Info("Successfully added new menu item", slog.Any("MenuItem", item))
 
 	utils.WriteJSONResponse(http.StatusCreated, item, w, r)
 }
@@ -92,7 +92,7 @@ func (h *menuHandler) GetMenuItems(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved Menu items")
+	h.log.Debug("Retrieved Menu items")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -122,13 +122,13 @@ func (h *menuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Retrieved menu item with ID: %s", itemId)
+	h.log.Debug("Retrieved menu item with ID", slog.String("ItemId", itemId))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
-		h.logger.PrintErrorMsg("Failed to write response: %v", err)
+		h.log.Error("Failed to write response", "error", err)
 	}
 }
 
@@ -203,7 +203,7 @@ func (h *menuHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.PrintDebugMsg("Menu item with ID: %s successfully deleted", itemId)
+	h.log.Debug("Successfully deleted a menu item with ID ", slog.String("ItemId", itemId))
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -6,9 +6,8 @@ import (
 	"os"
 
 	"hot-coffee/internal/server"
+	"hot-coffee/internal/utils"
 	"hot-coffee/pkg/logger"
-
-	. "hot-coffee/internal/utils"
 )
 
 // TODO: Test how flag parsing works, and find bugs
@@ -34,35 +33,34 @@ func init() {
 
 	logger.InitLogger(true, true)
 
-	flag.Usage = CustomUsage
-}
-
-func validate() error {
-	err := ValidatePort(port)
-	if err != nil {
-		return err
-	}
-
-	err = ValidateDir(dir)
-	if err != nil {
-		return err
-	}
-	return nil
+	flag.Usage = utils.CustomUsage
 }
 
 func main() {
 	flag.Parse()
 
-	err := validate()
+	err := utils.ValidatePort(port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	port = ":" + port
 
-	cfg := server.NewConfig(configPath, port, dir)
+	err = utils.ValidateDir(dir)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-	apiServer := server.New(cfg, logger.LOGGER)
+	cfg := server.NewConfig(configPath, ":"+port, dir)
+
+	log := logger.SetupLogger(logger.EnvDev)
+	if log == nil {
+		fmt.Println("Logrus initialization failed (Logger instance is nil)")
+		os.Exit(1)
+	}
+	log.Info("Logrus is initialized successfully")
+
+	apiServer := server.New(cfg, log)
 	err = apiServer.Start()
 	if err != nil {
 		fmt.Println(err)
