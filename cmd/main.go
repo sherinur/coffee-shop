@@ -31,8 +31,6 @@ func init() {
 	flag.StringVar(&dir, "dir", "./data", "Path to the directory")
 	flag.StringVar(&configPath, "cfg", "configs/server.yaml", "Path to the config file")
 
-	logger.InitLogger(true, true)
-
 	flag.Usage = utils.CustomUsage
 }
 
@@ -53,12 +51,12 @@ func main() {
 
 	cfg := server.NewConfig(configPath, ":"+port, dir)
 
-	log := logger.SetupLogger(logger.EnvDev)
+	log := logger.SetupLogger(&logger.LoggerOptions{Env: cfg.Env, LogFilepath: cfg.Log_file})
 	if log == nil {
-		fmt.Println("Logrus initialization failed (Logger instance is nil)")
+		fmt.Println("Logger initialization failed (Logger instance is nil)")
 		os.Exit(1)
 	}
-	log.Info("Logrus is initialized successfully")
+	log.Info("Logger is initialized successfully")
 
 	apiServer := server.New(cfg, log)
 	err = apiServer.Start()

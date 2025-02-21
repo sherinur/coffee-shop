@@ -1,7 +1,7 @@
 package server
 
 type Config struct {
-	env            string
+	Env            string
 	port           string
 	data_directory string
 
@@ -14,7 +14,7 @@ type Config struct {
 	write_timeout string
 	idle_timout   string
 
-	log_file string
+	Log_file string
 	cfg_file string
 
 	allow_overwrite bool
@@ -27,7 +27,7 @@ func NewConfig(configPath, port, dir string) *Config {
 	}
 
 	return &Config{
-		env:            "local",
+		Env:            "local",
 		port:           port,
 		data_directory: dir,
 
@@ -40,7 +40,7 @@ func NewConfig(configPath, port, dir string) *Config {
 		write_timeout: "4s",
 		idle_timout:   "60s",
 
-		log_file: "./logs/all.log",
+		Log_file: "./logs/all.log",
 		cfg_file: "./configs/server.yaml",
 
 		allow_overwrite: true,

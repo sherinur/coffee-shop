@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"hot-coffee/models"
-	"hot-coffee/pkg/logger"
 )
 
 // WriteRawJSONResponse writes a raw JSON response to the HTTP response writer with a given status code.
@@ -41,11 +40,11 @@ func WriteJSONResponse(statusCode int, jsonResponse any, w http.ResponseWriter, 
 // It logs the error message based on the provided status code and returns a JSON object
 // with the error message in the response body.
 func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *http.Request) {
-	if statusCode/100 >= 5 {
-		logger.LOGGER.PrintErrorMsg(err.Error())
-	} else {
-		logger.LOGGER.PrintDebugMsg(err.Error())
-	}
+	// if statusCode/100 >= 5 {
+	// 	logger.LOGGER.PrintErrorMsg(err.Error())
+	// } else {
+	// 	logger.LOGGER.PrintDebugMsg(err.Error())
+	// }
 
 	errorJSON := &models.ErrorResponse{Error: err.Error()}
 
@@ -53,7 +52,7 @@ func WriteErrorResponse(statusCode int, err error, w http.ResponseWriter, r *htt
 }
 
 func WriteInfoResponse(statusCode int, message string, w http.ResponseWriter, r *http.Request) {
-	logger.LOGGER.PrintDebugMsg(message)
+	// logger.LOGGER.PrintDebugMsg(message)
 
 	infoJSON := &models.InfoResponse{Message: message}
 	WriteJSONResponse(statusCode, infoJSON, w, r)

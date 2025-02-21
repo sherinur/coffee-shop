@@ -23,8 +23,10 @@ type Context struct {
 	fullPath string
 }
 
-type HandlersChain []HandlerFunc
-type HandlerFunc func(*Context)
+type (
+	HandlersChain []HandlerFunc
+	HandlerFunc   func(*Context)
+)
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 	return &Context{
