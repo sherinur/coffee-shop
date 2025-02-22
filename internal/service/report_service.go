@@ -3,7 +3,7 @@ package service
 import (
 	"sort"
 
-	"coffee-shop/internal/dal"
+	"coffee-shop/internal/repository"
 	"coffee-shop/models"
 )
 
@@ -13,13 +13,13 @@ type ReportService interface {
 }
 
 type reportService struct {
-	orderRepository     dal.OrderRepository
-	menuReposipory      dal.MenuRepository
-	inventoryRepository dal.InventoryRepository
-	reportRepository    dal.ReportRepository
+	orderRepository     repository.OrderRepository
+	menuReposipory      repository.MenuRepository
+	inventoryRepository repository.InventoryRepository
+	reportRepository    repository.ReportRepository
 }
 
-func NewReportService(o dal.OrderRepository, m dal.MenuRepository, i dal.InventoryRepository, r dal.ReportRepository) *reportService {
+func NewReportService(o repository.OrderRepository, m repository.MenuRepository, i repository.InventoryRepository, r repository.ReportRepository) *reportService {
 	if o == nil || m == nil || i == nil || r == nil {
 		return nil
 	}

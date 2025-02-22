@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"coffee-shop/internal/dal"
+	"coffee-shop/internal/repository"
 	"coffee-shop/models"
 )
 
@@ -17,10 +17,10 @@ type MenuService interface {
 }
 
 type menuService struct {
-	MenuRepository dal.MenuRepository
+	MenuRepository repository.MenuRepository
 }
 
-func NewMenuService(repo dal.MenuRepository) *menuService {
+func NewMenuService(repo repository.MenuRepository) *menuService {
 	if repo == nil {
 		return nil
 	}
@@ -65,7 +65,7 @@ func ValidateMenuItem(i models.MenuItem) error {
 }
 
 func ValidateMenuIngredient(i []models.MenuItemIngredient) error {
-	if i == nil || len(i) < 1 {
+	if len(i) < 1 {
 		return ErrNotValidIngredints
 	}
 	for k, ingredient := range i {

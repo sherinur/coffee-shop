@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"coffee-shop/internal/dal"
+	"coffee-shop/internal/repository"
 	"coffee-shop/models"
 )
 
@@ -23,13 +23,13 @@ type OrderService interface {
 }
 
 type orderService struct {
-	OrderRepository     dal.OrderRepository
-	MenuRepository      dal.MenuRepository
-	InventoryRepository dal.InventoryRepository
-	ReportRepository    dal.ReportRepository
+	OrderRepository     repository.OrderRepository
+	MenuRepository      repository.MenuRepository
+	InventoryRepository repository.InventoryRepository
+	ReportRepository    repository.ReportRepository
 }
 
-func NewOrderService(or dal.OrderRepository, menu dal.MenuRepository, ir dal.InventoryRepository, re dal.ReportRepository) *orderService {
+func NewOrderService(or repository.OrderRepository, menu repository.MenuRepository, ir repository.InventoryRepository, re repository.ReportRepository) *orderService {
 	if or == nil || ir == nil {
 		return nil
 	}
@@ -62,7 +62,7 @@ func ValidateOrder(o models.Order) error {
 }
 
 func ValidateOrderItems(items []models.OrderItem) error {
-	if items == nil || len(items) < 1 {
+	if len(items) < 1 {
 		return ErrNotValidOrderItems
 	}
 

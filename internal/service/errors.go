@@ -2,17 +2,40 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 )
 
-var (
-	ErrNoOrder error = errors.New("order not found")
+// ServiceError is a wrapper struct of error for the service level
+type ServiceError struct {
+	Err     error
+	Code    int
+	Message string
+}
 
-	ErrNotValidIngredientID   error = errors.New("ingredient ID is not valid")
-	ErrNotUniqueID            error = errors.New("ingredient ID must be unique")
-	ErrNoItem                 error = errors.New("item not found")
-	ErrNotValidIngredientName error = errors.New("ingredient name is not valid")
-	ErrNotValidQuantity       error = errors.New("quantity is not valid")
-	ErrNotValidUnit           error = errors.New("ingredient unit is not valid")
+func (e *ServiceError) Error() string {
+	return fmt.Sprintf("service error: %v (status: %d)", e.Err, e.Code)
+}
+
+func (e *ServiceError) Unwrap() error {
+	return e.Err
+}
+
+func NewServiceError(err error, code int, message string) *ServiceError {
+	return &ServiceError{
+		Err:     err,
+		Code:    code,
+		Message: message,
+	}
+}
+
+var (
+	ErrNotValidIngredientID   error = NewServiceError(errors.New("invalid ingredient ID"), http.StatusBadRequest, "ingredient ID is not valid")
+	ErrNotUniqueID            error = NewServiceError(errors.New("not unique ingredient ID"), http.StatusConflict, "ingredient ID must be unique")
+	ErrNoItem                 error = NewServiceError(errors.New("item not found"), http.StatusNotFound, "item with the given ID does not exist")
+	ErrNotValidIngredientName error = NewServiceError(errors.New("invalid ingredient Name"), http.StatusBadRequest, "ingredient name is not valid")
+	ErrNotValidQuantity       error = NewServiceError(errors.New("invalid ingredient Quantity"), http.StatusBadRequest, "ingredient quantity is not valid")
+	ErrNotValidUnit           error = NewServiceError(errors.New("invalid ingredient Unit"), http.StatusBadRequest, "ingredient unit is not valid")
 
 	ErrNotValidMenuID           error = errors.New("product ID is not valid")
 	ErrNotUniqueMenuID          error = errors.New("product ID must be unique")
@@ -30,6 +53,7 @@ var (
 	ErrNotValidStatusField       error = errors.New("status field cannot be set manually")
 	ErrNotValidCreatedAt         error = errors.New("created_at field cannot be set manually")
 
+	ErrNoOrder                    error = errors.New("order not found")
 	ErrOrderProductNotFound       error = errors.New("product not found")
 	ErrNotEnoughInventoryQuantity error = errors.New("not enough ingredient quantity")
 	ErrProductNotFound            error = errors.New("the product is not on the menu")

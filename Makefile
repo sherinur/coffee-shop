@@ -1,7 +1,6 @@
-BINARY_NAME=hot-coffee
+BINARY_NAME=coffee-shop
 
-MAIN_FILE=cmd/main.go
-
+MAIN_FILE=cmd/coffee-shop/main.go
 
 build:
 	go mod tidy

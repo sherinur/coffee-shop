@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"coffee-shop/internal/server"
+	"coffee-shop/internal/transport/http/server"
 	"coffee-shop/internal/utils"
 	"coffee-shop/pkg/logger"
 )

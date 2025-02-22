@@ -2,15 +2,15 @@ package server
 
 import (
 	"log/slog"
-	"net/http"
 
 	"coffee-shop/internal/utils"
+	"god"
 )
 
 type Server struct {
 	config *Config
 	log    *slog.Logger
-	mux    *http.ServeMux
+	r      *god.Router
 }
 
 // New server
@@ -18,18 +18,15 @@ func New(config *Config, logger *slog.Logger) *Server {
 	s := &Server{
 		config: config,
 		log:    logger,
-		mux:    http.NewServeMux(),
+		r:      god.Default(),
 	}
 
 	s.registerRoutes()
 	return s
 }
 
-// TODO: Продолжить по видео REST API на Golang
-
 // Start the server
 func (s *Server) Start() error {
-	s.log.Info("Starting server on port " + s.config.port)
 	s.log.Info("Path to the directory set: " + s.config.data_directory)
 	s.log.Info("Path to the config set: " + s.config.cfg_file)
 
@@ -67,9 +64,8 @@ func (s *Server) Start() error {
 	utils.CreateFile(s.config.order_file)
 	utils.CreateFile(s.config.report_file)
 
-	mux := s.RequestMiddleware(s.mux)
-
-	return http.ListenAndServe(s.config.port, mux)
+	s.log.Info("Starting server on port " + s.config.port)
+	return s.r.Run(s.config.port)
 }
 
 // Shutdown the server

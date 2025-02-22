@@ -2,25 +2,26 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
-	"coffee-shop/internal/dal"
+	"coffee-shop/internal/repository"
 	"coffee-shop/models"
 )
 
 type InventoryService interface {
 	AddInventoryItem(i models.InventoryItem) error
-	RetrieveInventoryItems() ([]byte, error)
+	RetrieveInventoryItems() ([]models.InventoryItem, error)
 	RetrieveInventoryItem(id string) ([]byte, error)
 	UpdateInventoryItem(id string, item models.InventoryItem) error
 	DeleteInventoryItem(id string) error
 }
 
 type inventoryService struct {
-	InventoryRepository dal.InventoryRepository
+	InventoryRepository repository.InventoryRepository
 }
 
-func NewInventoryService(repo dal.InventoryRepository) *inventoryService {
+func NewInventoryService(repo repository.InventoryRepository) *inventoryService {
 	if repo == nil {
 		return nil
 	}
@@ -86,18 +87,8 @@ func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 // Returns the items data in JSON format as a byte slice.
 // The following error may be returned:
 // - An error if there is a failure when retrieving items from the repository or when marshalling the data.
-func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
-	inventoryItems, err := s.InventoryRepository.GetAllItems()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := json.MarshalIndent(inventoryItems, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+func (s *inventoryService) RetrieveInventoryItems() ([]models.InventoryItem, error) {
+	return s.InventoryRepository.GetAllItems()
 }
 
 // RetrieveInventoryItem retrieves a single inventory item by its ID.
@@ -106,6 +97,10 @@ func (s *inventoryService) RetrieveInventoryItems() ([]byte, error) {
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
 func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
+	if len(id) == 0 {
+		return nil, errors.New("identificator is not valid")
+	}
+
 	var inventoryItem models.InventoryItem
 	inventoryItem, err := s.InventoryRepository.GetItemById(id)
 	if err != nil {
@@ -130,6 +125,10 @@ func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 // - ErrNotUniqueID if new item id not unique.
 // - An error if there is a validation issue or a failure when updating the repository.
 func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem) error {
+	if len(id) == 0 {
+		return errors.New("identificator is not valid")
+	}
+
 	if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
 		return err
 	} else if !exists {
@@ -165,5 +164,8 @@ func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving or saving items in the repository.
 func (s *inventoryService) DeleteInventoryItem(id string) error {
+	if len(id) == 0 {
+		return errors.New("identificator is not valid")
+	}
 	return s.InventoryRepository.DeleteItemByID(id)
 }
