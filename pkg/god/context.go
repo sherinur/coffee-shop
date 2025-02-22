@@ -2,6 +2,7 @@ package god
 
 import (
 	"fmt"
+	"god/binding"
 	"net/http"
 	"sync"
 )
@@ -83,6 +84,17 @@ func (c *Context) Get(key string) (value any, exists bool) {
 	return value, exists
 }
 
+// Fullpath returns the full path of uri
 func (c *Context) FullPath() (fullPath string) {
 	return c.fullPath
+}
+
+// ShouldBindWith binds a struct to the custom binder.
+func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+	return b.Bind(c.Request, obj)
+}
+
+// ShouldBindJSON is a shortcut for ShouldBindWith for JSON binding.
+func (c *Context) ShouldBindJSON(obj any) error {
+	return c.ShouldBindWith(obj, binding.JSON)
 }

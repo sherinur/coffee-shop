@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"hot-coffee/internal/server"
-	"hot-coffee/internal/utils"
-	"hot-coffee/pkg/logger"
+	"coffee-shop/internal/server"
+	"coffee-shop/internal/utils"
+	"coffee-shop/pkg/logger"
 )
 
 // TODO: Test how flag parsing works, and find bugs

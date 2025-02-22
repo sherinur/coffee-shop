@@ -31,7 +31,6 @@ func (r *JSON) WriteJSONResponse(code int, w http.ResponseWriter) error {
 	}
 
 	writeStatusCode(code, w)
-
 	_, err = w.Write(data)
 	if err != nil {
 		return err

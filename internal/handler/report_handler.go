@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"hot-coffee/internal/service"
-	"hot-coffee/internal/utils"
-	"hot-coffee/models"
+	"coffee-shop/internal/service"
+	"coffee-shop/internal/utils"
+	"coffee-shop/models"
 )
 
 type ReportHandler interface {

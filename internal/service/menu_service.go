@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
+	"coffee-shop/internal/dal"
+	"coffee-shop/models"
 )
 
 type MenuService interface {

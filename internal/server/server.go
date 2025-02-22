@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"hot-coffee/internal/utils"
+	"coffee-shop/internal/utils"
 )
 
 type Server struct {

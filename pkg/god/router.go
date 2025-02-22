@@ -7,6 +7,12 @@ import (
 	"sync"
 )
 
+/*
+		GOd.
+	    A Minimalist Web Framework for Go.
+	    Author: Nurislam Sheri (https://github.com/sherinur/)
+		Read README.md for more information.
+*/
 type Router struct {
 	mu     sync.RWMutex
 	routes map[string]map[string][]HandlerFunc

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"hot-coffee/models"
+	"coffee-shop/models"
 )
 
 // WriteRawJSONResponse writes a raw JSON response to the HTTP response writer with a given status code.

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"hot-coffee/internal/utils"
-	"hot-coffee/models"
+	"coffee-shop/internal/utils"
+	"coffee-shop/models"
 )
 
 type InventoryRepository interface {

@@ -3,8 +3,8 @@ package service
 import (
 	"sort"
 
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
+	"coffee-shop/internal/dal"
+	"coffee-shop/models"
 )
 
 type ReportService interface {

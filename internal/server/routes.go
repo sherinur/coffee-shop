@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"hot-coffee/internal/dal"
-	"hot-coffee/internal/handler"
-	"hot-coffee/internal/service"
+	"coffee-shop/internal/dal"
+	"coffee-shop/internal/handler"
+	"coffee-shop/internal/service"
 )
 
 func (s *Server) registerRoutes() {
