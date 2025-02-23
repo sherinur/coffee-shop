@@ -1,24 +1,24 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
+	"god"
 	"log/slog"
 	"net/http"
 
 	"coffee-shop/internal/service"
-	"coffee-shop/internal/utils"
 	"coffee-shop/models"
 )
 
-type MenuHandler interface {
-	AddMenuItem(w http.ResponseWriter, r *http.Request)
-	GetMenuItems(w http.ResponseWriter, r *http.Request)
-	GetMenuItem(w http.ResponseWriter, r *http.Request)
-	UpdateMenuItem(w http.ResponseWriter, r *http.Request)
-	DeleteMenuItem(w http.ResponseWriter, r *http.Request)
+type MenuWriter interface {
+	AddMenuItem(*god.Context)
+	UpdateMenuItem(*god.Context)
+	DeleteMenuItem(*god.Context)
+}
+
+type MenuReader interface {
+	GetMenuItems(*god.Context)
+	GetMenuItem(*god.Context)
 }
 
 type menuHandler struct {
@@ -32,178 +32,89 @@ func NewMenuHandler(s service.MenuService, l *slog.Logger) *menuHandler {
 
 // AddMenuItem handles the HTTP request to add a new menu item.
 // It processes the request body, validates the input, and calls the service layer to add the item.
-func (h *menuHandler) AddMenuItem(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-		return
-	}
-	defer r.Body.Close()
-
+func (h *menuHandler) AddMenuItem(c *god.Context) {
 	var item models.MenuItem
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&item); err != nil {
-		switch err {
-		case io.EOF:
-			utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-		default:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-		}
+	err := c.ShouldBindJSON(&item)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
 	}
-
 	h.log.Debug("Adding new menu item", slog.Any("MenuItem", item))
 
-	err := h.MenuService.AddMenuItem(item)
+	err = h.MenuService.AddMenuItem(item)
 	if err != nil {
-		switch err {
-		case service.ErrNotUniqueMenuID:
-			utils.WriteErrorResponse(http.StatusConflict, err, w, r)
-			return
-		case service.ErrNotValidMenuID,
-			service.ErrNotValidMenuName,
-			service.ErrNotValidMenuDescription,
-			service.ErrNotValidPrice,
-			service.ErrNotValidIngredientID,
-			service.ErrNotValidQuantity,
-			service.ErrDuplicateMenuIngredients,
-			service.ErrNotValidIngredints:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
 	h.log.Info("Successfully added new menu item", slog.Any("MenuItem", item))
-
-	utils.WriteJSONResponse(http.StatusCreated, item, w, r)
+	c.JSON(http.StatusCreated, god.H{"code": http.StatusCreated, "message": "Menu item added successfully"})
 }
 
 // GetMenuItems handles the HTTP request to retrieve all menu items.
 // It calls the service layer to fetch the data and returns it to the client.
-func (h *menuHandler) GetMenuItems(w http.ResponseWriter, r *http.Request) {
-	data, err := h.MenuService.RetrieveMenuItems()
+func (h *menuHandler) GetMenuItems(c *god.Context) {
+	items, err := h.MenuService.RetrieveMenuItems()
 	if err != nil {
-		switch err {
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
-
 	h.log.Debug("Retrieved Menu items")
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": items})
 }
 
 // GetMenuItem handles the HTTP request to retrieve a specific menu item by its ID.
 // It checks if the item ID is valid, calls the service layer to fetch the menu item,
 // and returns the result to the client. In case of errors, it responds with the appropriate error message.
-func (h *menuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
-	itemId := r.PathValue("id")
-
-	if len(itemId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
-		return
-	}
-
-	data, err := h.MenuService.RetrieveMenuItem(itemId)
+func (h *menuHandler) GetMenuItem(c *god.Context) {
+	id := c.Request.PathValue("id")
+	item, err := h.MenuService.RetrieveMenuItem(id)
 	if err != nil {
-		switch err {
-		case service.ErrNoItem:
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
-
-	h.log.Debug("Retrieved menu item with ID", slog.String("ItemId", itemId))
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(data)
-	if err != nil {
-		h.log.Error("Failed to write response", "error", err)
-	}
+	h.log.Debug("Retrieved menu item with ID", slog.String("id", id))
+	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": item})
 }
 
 // UpdateMenuItem handles the HTTP request to update an existing menu item.
 // It checks if the request body is valid, decodes the new menu item data, and
 // calls the service layer to update the menu item. In case of errors, it responds
 // with the appropriate HTTP status and error message.
-func (h *menuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-		return
-	}
-	defer r.Body.Close()
-
-	itemId := r.PathValue("id")
-	if len(itemId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
-		return
-	}
-
+func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 	var item models.MenuItem
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&item); err != nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+	err := c.ShouldBindJSON(&item)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
 	}
 
-	err := h.MenuService.UpdateMenuItem(itemId, item)
+	id := c.Request.PathValue("id")
+	err = h.MenuService.UpdateMenuItem(id, item)
 	if err != nil {
-		switch err {
-		case service.ErrNoItem:
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
-			return
-		case service.ErrNotUniqueMenuID,
-			service.ErrNotValidMenuID,
-			service.ErrNotValidMenuName,
-			service.ErrNotValidMenuDescription,
-			service.ErrNotValidPrice,
-			service.ErrNotValidIngredientID,
-			service.ErrNotValidQuantity,
-			service.ErrDuplicateMenuIngredients:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
 // DeleteMenuItem handles the HTTP request to delete a menu item by its ID.
 // It validates the item ID, calls the service layer to delete the item, and
 // responds with the appropriate HTTP status and message.
-func (h *menuHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
-	itemId := r.PathValue("id")
-	if len(itemId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
-		return
-	}
-
-	err := h.MenuService.DeleteMenuItem(itemId)
+func (h *menuHandler) DeleteMenuItem(c *god.Context) {
+	id := c.Request.PathValue("id")
+	err := h.MenuService.DeleteMenuItem(id)
 	if err != nil {
-		switch err {
-		case service.ErrNoItem:
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("item with id '%s' not found", itemId), w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
-	h.log.Debug("Successfully deleted a menu item with ID ", slog.String("ItemId", itemId))
+	h.log.Debug("Successfully deleted a menu item with ID ", slog.String("id", id))
+	c.Status(http.StatusNoContent)
+}
 
-	w.WriteHeader(http.StatusNoContent)
+func (h *menuHandler) handleError(c *god.Context, err error) {
+	var serviceErr *service.ServiceError
+	if errors.As(err, &serviceErr) {
+		c.JSON(serviceErr.Code, serviceErr.Hash())
+	} else {
+		h.log.Error("Error of MenuHandler", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
+	}
 }

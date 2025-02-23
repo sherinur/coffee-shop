@@ -30,9 +30,9 @@ func (e *ServiceError) Hash() map[string]any {
 	}
 }
 
-func NewServiceError(err error, code int, message string) *ServiceError {
+func NewServiceError(errStr string, code int, message string) *ServiceError {
 	return &ServiceError{
-		Err:     err,
+		Err:     errors.New(errStr),
 		Code:    code,
 		Message: message,
 	}
@@ -41,22 +41,22 @@ func NewServiceError(err error, code int, message string) *ServiceError {
 var (
 	// Inventory errors
 
-	ErrNotValidIngredientID   error = NewServiceError(errors.New("invalid ingredient ID"), http.StatusBadRequest, "ingredient ID is not valid")
-	ErrNotUniqueID            error = NewServiceError(errors.New("not unique ingredient ID"), http.StatusConflict, "item with the same ID already exists")
-	ErrNoItem                 error = NewServiceError(errors.New("item not found"), http.StatusNotFound, "item with the given ID does not exist")
-	ErrNotValidIngredientName error = NewServiceError(errors.New("invalid ingredient Name"), http.StatusBadRequest, "ingredient name is not valid")
-	ErrNotValidQuantity       error = NewServiceError(errors.New("invalid ingredient Quantity"), http.StatusBadRequest, "ingredient quantity is not valid")
-	ErrNotValidUnit           error = NewServiceError(errors.New("invalid ingredient Unit"), http.StatusBadRequest, "ingredient unit is not valid")
+	ErrNotValidIngredientID   error = NewServiceError("invalid ingredient ID", http.StatusBadRequest, "ingredient ID is not valid")
+	ErrNotUniqueID            error = NewServiceError("not unique ingredient ID", http.StatusConflict, "item with the same ID already exists")
+	ErrNoItem                 error = NewServiceError("item not found", http.StatusNotFound, "item with the given ID does not exist")
+	ErrNotValidIngredientName error = NewServiceError("invalid ingredient Name", http.StatusBadRequest, "ingredient name is not valid")
+	ErrNotValidQuantity       error = NewServiceError("invalid ingredient Quantity", http.StatusBadRequest, "ingredient quantity is not valid")
+	ErrNotValidUnit           error = NewServiceError("invalid ingredient Unit", http.StatusBadRequest, "ingredient unit is not valid")
 
 	// Menu errors
 
-	ErrNotValidMenuID           error = errors.New("product ID is not valid")
-	ErrNotUniqueMenuID          error = errors.New("product ID must be unique")
-	ErrNotValidMenuName         error = errors.New("product name is not valid")
-	ErrNotValidMenuDescription  error = errors.New("product description cannot be empty")
-	ErrNotValidPrice            error = errors.New("product price must be greater than 0")
-	ErrDuplicateMenuIngredients error = errors.New("the ingredients of the product must not be repeated")
-	ErrNotValidIngredints       error = errors.New("product ingredients is not valid")
+	ErrNotValidMenuID           error = NewServiceError("invalid product ID", http.StatusBadRequest, "product ID is not valid")
+	ErrNotUniqueMenuID          error = NewServiceError("not unique product ID", http.StatusConflict, "product with the same ID already exists")
+	ErrNotValidMenuName         error = NewServiceError("invalid product Name", http.StatusBadRequest, "product name is not valid")
+	ErrNotValidMenuDescription  error = NewServiceError("invalid product Description", http.StatusBadRequest, "product description cannot be empty")
+	ErrNotValidPrice            error = NewServiceError("invalid product Price", http.StatusBadRequest, "product price must be greater than 0")
+	ErrDuplicateMenuIngredients error = NewServiceError("invalid product Ingredients", http.StatusBadRequest, "ingredients of the product must not be repeated")
+	ErrNotEnoughIngredients     error = NewServiceError("invalid product Ingredients", http.StatusBadRequest, "product must contain at least 1 ingredient")
 
 	// Order errors
 

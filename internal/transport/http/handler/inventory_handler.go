@@ -37,7 +37,7 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 	var item models.InventoryItem
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, god.H{"error": "invalid request body", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
 	}
 

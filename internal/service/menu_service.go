@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"strings"
 
 	"coffee-shop/internal/repository"
@@ -10,8 +9,8 @@ import (
 
 type MenuService interface {
 	AddMenuItem(i models.MenuItem) error
-	RetrieveMenuItems() ([]byte, error)
-	RetrieveMenuItem(id string) ([]byte, error)
+	RetrieveMenuItems() ([]models.MenuItem, error)
+	RetrieveMenuItem(id string) (*models.MenuItem, error)
 	UpdateMenuItem(id string, item models.MenuItem) error
 	DeleteMenuItem(id string) error
 }
@@ -66,7 +65,7 @@ func ValidateMenuItem(i models.MenuItem) error {
 
 func ValidateMenuIngredient(i []models.MenuItemIngredient) error {
 	if len(i) < 1 {
-		return ErrNotValidIngredints
+		return ErrNotEnoughIngredients
 	}
 	for k, ingredient := range i {
 		for l, ingredient2 := range i {
@@ -109,21 +108,15 @@ func (s *menuService) AddMenuItem(i models.MenuItem) error {
 	return nil
 }
 
-func (s *menuService) RetrieveMenuItems() ([]byte, error) {
-	menuItems, err := s.MenuRepository.GetAllMenuItems()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := json.MarshalIndent(menuItems, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+func (s *menuService) RetrieveMenuItems() ([]models.MenuItem, error) {
+	return s.MenuRepository.GetAllMenuItems()
 }
 
-func (s *menuService) RetrieveMenuItem(id string) ([]byte, error) {
+func (s *menuService) RetrieveMenuItem(id string) (*models.MenuItem, error) {
+	if len(id) == 0 {
+		return nil, ErrNotValidMenuID
+	}
+
 	menuItems, err := s.MenuRepository.GetAllMenuItems()
 	if err != nil {
 		if err.Error() == "EOF" {
@@ -147,15 +140,14 @@ func (s *menuService) RetrieveMenuItem(id string) ([]byte, error) {
 		return nil, ErrNoItem
 	}
 
-	data, err := json.MarshalIndent(menuItem, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return &menuItem, nil
 }
 
 func (s *menuService) UpdateMenuItem(id string, i models.MenuItem) error {
+	if len(id) == 0 {
+		return ErrNotValidMenuID
+	}
+
 	// Existence test of old item
 	if exists, err := s.MenuRepository.MenuItemExists(models.MenuItem{ID: id}); err != nil {
 		return err
@@ -187,6 +179,10 @@ func (s *menuService) UpdateMenuItem(id string, i models.MenuItem) error {
 }
 
 func (s *menuService) DeleteMenuItem(id string) error {
+	if len(id) == 0 {
+		return ErrNotValidMenuID
+	}
+
 	menuItems, err := s.MenuRepository.GetAllMenuItems()
 	if err != nil {
 		if err.Error() == "EOF" {
