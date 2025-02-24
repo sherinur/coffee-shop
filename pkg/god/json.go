@@ -26,16 +26,14 @@ func (r *JSON) WriteJSONResponse(code int, w http.ResponseWriter) error {
 
 	data, err := json.Marshal(r.Data)
 	if err != nil {
-		writeStatusCode(http.StatusInternalServerError, w)
 		return err
 	}
 
-	writeStatusCode(code, w)
+	w.WriteHeader(code)
 	_, err = w.Write(data)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

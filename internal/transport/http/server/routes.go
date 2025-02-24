@@ -7,20 +7,6 @@ import (
 )
 
 func (s *Server) registerRoutes() {
-	// // basic routes
-	// s.mux.HandleFunc("GET /health", s.HandleHealth)
-
-	// ! 1)	Конфликт имен для интерфейса и структуры
-	// !  	Ошибка: Название интерфейсов и структур одинаковое
-	// !	(например, InventoryService и inventoryService). Это может быть запутывающим.
-	// ! 	Рекомендация: Используйте префиксы или более уникальные имена для интерфейсов,
-	// ! 	например, InventoryService (интерфейс) и InventoryServiceImpl (структура) или InventoryRepo и inventoryRepositoryImpl.
-
-	// ! 2) Неиспользование интерфейсов в handler
-	// ! 	Ошибка: В inventoryHandler интерфейс InventoryService используется напрямую вместо указателя на service.InventoryService.
-	// !	Решение: Убедитесь, что InventoryService является интерфейсом,
-	// ! 	а не указателем на конкретную реализацию, чтобы сохранить гибкость в тестировании и подмене реализации.
-
 	// Registering inventory routes
 	s.registerInventoryRoutes()
 

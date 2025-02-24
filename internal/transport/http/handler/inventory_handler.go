@@ -42,10 +42,11 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 	}
 
 	err = h.inventoryService.AddInventoryItem(item)
-	h.log.Debug("Adding new inventory item:", slog.Any("item", item))
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
+	h.log.Debug("Adding new inventory item:", slog.Any("item", item))
 
 	h.log.Debug("Successfully added new inventory item:", slog.Any("item", item))
 	c.JSON(http.StatusCreated, god.H{"item": item})
@@ -57,6 +58,7 @@ func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
 	items, err := h.inventoryService.RetrieveInventoryItems()
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 
 	h.log.Debug("Retrieved inventory items")
@@ -70,6 +72,7 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 	data, err := h.inventoryService.RetrieveInventoryItem(itemId)
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 
 	h.log.Debug("Retrieved inventory item with ID:", slog.String("itemId", itemId))
@@ -90,6 +93,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 	err = h.inventoryService.UpdateInventoryItem(itemId, item)
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 
 	h.log.Debug("Successfully updated an inventory item with ID:", slog.String("itemId", itemId))
@@ -102,6 +106,7 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 	err := h.inventoryService.DeleteInventoryItem(itemId)
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 
 	h.log.Debug("Successfully deleted an inventory item with ID:", slog.String("itemId", itemId))
@@ -112,8 +117,9 @@ func (h *inventoryHandler) handleError(c *god.Context, err error) {
 	var serviceErr *service.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
-	} else {
-		h.log.Error("Error of InventoryHandler", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
+		return
 	}
+
+	h.log.Error("Error of InventoryHandler", slog.String("error", err.Error()))
+	c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
 }

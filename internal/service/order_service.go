@@ -1,8 +1,6 @@
 package service
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -12,8 +10,8 @@ import (
 
 type OrderService interface {
 	AddOrder(o models.Order) error
-	RetrieveOrders() ([]byte, error)
-	RetrieveOrder(id string) ([]byte, error)
+	RetrieveOrders() ([]models.Order, error)
+	RetrieveOrder(id string) (models.Order, error)
 	UpdateOrder(id string, item models.Order) error
 	DeleteOrder(id string) error
 	CloseOrder(id string) error
@@ -110,40 +108,27 @@ func (s *orderService) AddOrder(order models.Order) error {
 	return nil
 }
 
-func (s *orderService) RetrieveOrders() ([]byte, error) {
-	orders, err := s.OrderRepository.GetAllOrders()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := json.MarshalIndent(orders, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+func (s *orderService) RetrieveOrders() ([]models.Order, error) {
+	return s.OrderRepository.GetAllOrders()
 }
 
-func (s *orderService) RetrieveOrder(id string) ([]byte, error) {
-	var order models.Order
+func (s *orderService) RetrieveOrder(id string) (models.Order, error) {
+	if len(id) == 0 {
+		return models.Order{}, ErrNotValidOrderID
+	}
+
 	order, err := s.OrderRepository.GetOrderById(id)
 	if err != nil {
-		if err.Error() == "EOF" {
-			return nil, ErrNoOrder
-		}
-		return nil, err
+		return models.Order{}, err
 	}
 
-	data, err := json.MarshalIndent(order, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return order, nil
 }
 
 func (s *orderService) UpdateOrder(id string, order models.Order) error {
-	// ! TODO: Think about created time
+	if len(id) == 0 {
+		return ErrNotValidOrderID
+	}
 
 	if err := ValidateOrder(order); err != nil {
 		return err
@@ -162,13 +147,17 @@ func (s *orderService) UpdateOrder(id string, order models.Order) error {
 }
 
 func (s *orderService) DeleteOrder(id string) error {
+	if len(id) == 0 {
+		return ErrNotValidOrderID
+	}
+
 	return s.OrderRepository.DeleteOrderById(id)
 }
 
 func (s *orderService) CloseOrder(id string) error {
-	// TODO: Когда заказ закрывается через /orders/{id}/close, система считает, что заказ выполнен, и обновляет инвентарь, вычитая количество ингредиентов, необходимых для его выполнения.
-	// TODO: После успешного вычитания ингредиентов заказ считается закрытым( "status": "open", -> "status": "closed",), и он больше не будет доступен для изменений (Изменить Update, проверять статус closed or open).
-	// ? TODO: Закрытие также означает, что заказ включается в итоговую статистику для расчетов выручки и популярных позиций.
+	if len(id) == 0 {
+		return ErrNotValidOrderID
+	}
 
 	order, err := s.OrderRepository.GetOrderById(id)
 	if err != nil {
@@ -189,15 +178,12 @@ func (s *orderService) CloseOrder(id string) error {
 		return err
 	}
 
-	fmt.Println("TOTAL ORDER PRICE:", totalOrderPrice)
 	err = s.ReportRepository.UpdateTotalSales(totalOrderPrice)
 	if err != nil {
 		return err
 	}
 
 	order.Status = "closed"
-
-	// TODO: Use report repo and add income to total_sales.json
 
 	err = s.OrderRepository.RewriteOrder(id, order)
 	if err != nil {
@@ -207,7 +193,6 @@ func (s *orderService) CloseOrder(id string) error {
 	return nil
 }
 
-// write status code 422
 func (s *orderService) IsInventorySufficient(orderItems []models.OrderItem) (bool, error) {
 	inventoryMap := make(map[string]models.InventoryItem)
 	inventoryItems, err := s.InventoryRepository.GetAllItems()

@@ -1,10 +1,10 @@
 package server
 
 import (
+	"god"
 	"log/slog"
 
 	"coffee-shop/internal/utils"
-	"god"
 )
 
 type Server struct {

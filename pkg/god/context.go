@@ -2,9 +2,10 @@ package god
 
 import (
 	"fmt"
-	"god/binding"
 	"net/http"
 	"sync"
+
+	"god/binding"
 )
 
 type Context struct {
@@ -58,7 +59,7 @@ func (c *Context) JSON(code int, obj any) {
 }
 
 func (c *Context) Status(code int) {
-	writeStatusCode(code, c.Writer)
+	c.Writer.WriteHeader(code)
 }
 
 // Get is used to store a new key/value pair for this context.

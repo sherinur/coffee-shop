@@ -1,25 +1,25 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
+	"god"
 	"log/slog"
 	"net/http"
 
 	"coffee-shop/internal/service"
-	"coffee-shop/internal/utils"
 	"coffee-shop/models"
 )
 
-type OrderHandler interface {
-	CreateOrder(w http.ResponseWriter, r *http.Request)
-	RetrieveOrders(w http.ResponseWriter, r *http.Request)
-	RetrieveOrder(w http.ResponseWriter, r *http.Request)
-	UpdateOrder(w http.ResponseWriter, r *http.Request)
-	DeleteOrder(w http.ResponseWriter, r *http.Request)
-	CloseOrder(w http.ResponseWriter, r *http.Request)
+type OrderWriter interface {
+	CreateOrder(*god.Context)
+	UpdateOrder(*god.Context)
+	DeleteOrder(*god.Context)
+	CloseOrder(*god.Context)
+}
+
+type OrderReader interface {
+	RetrieveOrders(*god.Context)
+	RetrieveOrder(*god.Context)
 }
 
 type orderHandler struct {
@@ -31,193 +31,90 @@ func NewOrderHandler(s service.OrderService, l *slog.Logger) *orderHandler {
 	return &orderHandler{OrderService: s, log: l}
 }
 
-func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-		return
-	}
-	defer r.Body.Close()
-
+func (h *orderHandler) CreateOrder(c *god.Context) {
 	var order models.Order
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&order); err != nil {
-		if err == io.EOF {
-			utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-			return
-		}
-		utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+	err := c.ShouldBindJSON(&order)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
 	}
 
 	h.log.Debug("Creating new order", slog.Any("Order", order))
-
-	err := h.OrderService.AddOrder(order)
+	err = h.OrderService.AddOrder(order)
 	if err != nil {
-		switch err {
-		case service.ErrNotUniqueOrder:
-			utils.WriteErrorResponse(http.StatusConflict, err, w, r)
-			return
-		case service.ErrNotValidOrderID,
-			service.ErrNotValidOrderCustomerName,
-			service.ErrNotValidStatusField,
-			service.ErrNotValidCreatedAt,
-			service.ErrNotValidOrderItems,
-			service.ErrNotValidIngredientID,
-			service.ErrDuplicateOrderItems,
-			service.ErrNotValidQuantity,
-			service.ErrNotValidOrderProductID,
-			service.ErrNotEnoughInventoryQuantity:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-			return
-		case service.ErrOrderProductNotFound,
-			service.ErrInventoryItemNotFound:
-			utils.WriteErrorResponse(http.StatusUnprocessableEntity, err, w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
 	h.log.Info("Successfully created new order", slog.Any("Order", order))
-
-	utils.WriteJSONResponse(http.StatusCreated, order, w, r)
+	c.JSON(http.StatusCreated, god.H{"body": order})
 }
 
-func (h *orderHandler) RetrieveOrders(w http.ResponseWriter, r *http.Request) {
+func (h *orderHandler) RetrieveOrders(c *god.Context) {
 	// Retrieve the orders from the service layer
-	data, err := h.OrderService.RetrieveOrders()
+	items, err := h.OrderService.RetrieveOrders()
 	if err != nil {
-		switch err {
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
 	h.log.Debug("Retrieved orders")
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	c.JSON(http.StatusOK, god.H{"body": items})
 }
 
-func (h *orderHandler) RetrieveOrder(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("id")
-
-	if len(orderId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
-		return
-	}
-
-	data, err := h.OrderService.RetrieveOrder(orderId)
+func (h *orderHandler) RetrieveOrder(c *god.Context) {
+	id := c.Request.PathValue("id")
+	item, err := h.OrderService.RetrieveOrder(id)
 	if err != nil {
-		if err.Error() == "order not found" {
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
-			return
-		} else {
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
-	h.log.Debug("Retrieved order with ID", slog.String("OrderId", orderId))
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(data)
-	if err != nil {
-		utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-		h.log.Error("Failed to write response", "error", err)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	h.log.Debug("Retrieved order with ID", slog.String("OrderId", id))
+	c.JSON(http.StatusOK, item)
 }
 
-func (h *orderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("request body can not be empty"), w, r)
-		return
-	}
-	defer r.Body.Close()
-
-	orderId := r.PathValue("id")
-	if len(orderId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("identificator is not valid"), w, r)
-		return
-	}
-
+func (h *orderHandler) UpdateOrder(c *god.Context) {
+	id := c.Request.PathValue("id")
 	var order models.Order
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&order); err != nil {
-		utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
+	err := c.ShouldBindJSON(&order)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
 	}
 
-	err := h.OrderService.UpdateOrder(orderId, order)
+	err = h.OrderService.UpdateOrder(id, order)
 	if err != nil {
-		switch err {
-		case service.ErrNoItem:
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
-			return
-		case service.ErrNotValidOrderID,
-			service.ErrNotValidOrderCustomerName,
-			service.ErrNotValidStatusField,
-			service.ErrNotValidCreatedAt,
-			service.ErrNotValidOrderItems,
-			service.ErrNotValidIngredientID,
-			service.ErrDuplicateOrderItems,
-			service.ErrNotValidQuantity,
-			service.ErrNotValidOrderProductID,
-			service.ErrOrderProductNotFound,
-			service.ErrNotEnoughInventoryQuantity,
-			service.ErrInventoryItemNotFound:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-			return
-		default:
-			utils.WriteErrorResponse(http.StatusInternalServerError, err, w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.Status(http.StatusOK)
 }
 
-func (h *orderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("id")
-
-	if len(orderId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
-		return
-	}
-
-	err := h.OrderService.DeleteOrder(orderId)
+func (h *orderHandler) DeleteOrder(c *god.Context) {
+	id := c.Request.PathValue("id")
+	err := h.OrderService.DeleteOrder(id)
 	if err != nil {
-		if err.Error() == "order not found" {
-			utils.WriteErrorResponse(http.StatusNotFound, fmt.Errorf("order with id '%s' not found", orderId), w, r)
-			return
-		}
+		h.handleError(c, err)
 	}
 
-	h.log.Debug("Successfully deleted order with ID ", slog.String("OrderId", orderId))
-
-	w.WriteHeader(http.StatusNoContent)
+	h.log.Debug("Successfully deleted order with ID ", slog.String("OrderId", id))
+	c.Status(http.StatusNoContent)
 }
 
-func (h *orderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("id")
-
-	if len(orderId) == 0 {
-		utils.WriteErrorResponse(http.StatusBadRequest, errors.New("order id is not valid"), w, r)
-		return
-	}
-
-	err := h.OrderService.CloseOrder(orderId)
+func (h *orderHandler) CloseOrder(c *god.Context) {
+	id := c.Request.PathValue("id")
+	err := h.OrderService.CloseOrder(id)
 	if err != nil {
-		switch err {
-		default:
-			utils.WriteErrorResponse(http.StatusBadRequest, err, w, r)
-		}
+		h.handleError(c, err)
 	}
+	c.Status(http.StatusOK)
+}
 
-	w.WriteHeader(http.StatusOK)
+func (h *orderHandler) handleError(c *god.Context, err error) {
+	var serviceErr *service.ServiceError
+	if errors.As(err, &serviceErr) {
+		c.JSON(serviceErr.Code, serviceErr.Hash())
+	} else {
+		h.log.Error("Error of OrderHandler", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
+	}
 }

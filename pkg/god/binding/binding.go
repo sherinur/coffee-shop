@@ -21,8 +21,6 @@ type BindingBody interface {
 	BindBody([]byte, any) error
 }
 
-var (
-	JSON BindingBody = jsonBinding{}
-)
+var JSON BindingBody = jsonBinding{}
 
 // TODO: Implement validator struct and interface
