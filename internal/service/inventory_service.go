@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 type InventoryService interface {
 	AddInventoryItem(i models.InventoryItem) error
 	RetrieveInventoryItems() ([]models.InventoryItem, error)
-	RetrieveInventoryItem(id string) ([]byte, error)
+	RetrieveInventoryItem(id string) (*models.InventoryItem, error)
 	UpdateInventoryItem(id string, item models.InventoryItem) error
 	DeleteInventoryItem(id string) error
 }
@@ -96,12 +95,11 @@ func (s *inventoryService) RetrieveInventoryItems() ([]models.InventoryItem, err
 // The following errors may be returned:
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
-func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
+func (s *inventoryService) RetrieveInventoryItem(id string) (*models.InventoryItem, error) {
 	if len(id) == 0 {
 		return nil, errors.New("identificator is not valid")
 	}
 
-	var inventoryItem models.InventoryItem
 	inventoryItem, err := s.InventoryRepository.GetItemById(id)
 	if err != nil {
 		if err.Error() == "EOF" {
@@ -110,12 +108,7 @@ func (s *inventoryService) RetrieveInventoryItem(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := json.MarshalIndent(inventoryItem, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return &inventoryItem, nil
 }
 
 // UpdateInventoryItem updates the old inventory item with the new one.

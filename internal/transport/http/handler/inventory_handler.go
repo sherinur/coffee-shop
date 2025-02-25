@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"coffee-shop/internal/service"
+	"coffee-shop/internal/transport/dto/response"
 	"coffee-shop/models"
 )
 
@@ -46,10 +47,13 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 		h.handleError(c, err)
 		return
 	}
-	h.log.Debug("Adding new inventory item:", slog.Any("item", item))
 
 	h.log.Debug("Successfully added new inventory item:", slog.Any("item", item))
-	c.JSON(http.StatusCreated, god.H{"item": item})
+	res := response.APIResponse{
+		Status: http.StatusCreated,
+		Body:   god.H{"item": item},
+	}
+	c.JSON(res.Status, res)
 }
 
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
@@ -62,21 +66,28 @@ func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
 	}
 
 	h.log.Debug("Retrieved inventory items")
-	c.JSON(http.StatusOK, god.H{"items": items})
+	res := response.APIResponse{
+		Status: http.StatusOK,
+		Body:   god.H{"items": items},
+	}
+	c.JSON(res.Status, res)
 }
 
 // GetInventoryItem handles the HTTP request to retrieve a specific inventory item by its ID.
 func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
-	itemId := c.Request.PathValue("id")
-
-	data, err := h.inventoryService.RetrieveInventoryItem(itemId)
+	id := c.Request.PathValue("id")
+	item, err := h.inventoryService.RetrieveInventoryItem(id)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	h.log.Debug("Retrieved inventory item with ID:", slog.String("itemId", itemId))
-	c.JSON(http.StatusOK, god.H{"item": data})
+	h.log.Debug("Retrieved inventory item with ID:", slog.String("itemId", id))
+	res := response.APIResponse{
+		Status: http.StatusOK,
+		Body:   god.H{"item": item},
+	}
+	c.JSON(res.Status, res)
 }
 
 // UpdateInventoryItem handles the HTTP request to update an existing inventory item by its ID.
