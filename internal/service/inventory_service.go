@@ -108,7 +108,7 @@ func (s *inventoryService) RetrieveInventoryItem(id string) (*models.InventoryIt
 		return nil, err
 	}
 
-	return &inventoryItem, nil
+	return inventoryItem, nil
 }
 
 // UpdateInventoryItem updates the old inventory item with the new one.

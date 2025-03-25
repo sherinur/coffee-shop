@@ -57,8 +57,11 @@ func getLogLevel(env string) slog.Level {
 }
 
 func mustOpen(filepath string) *os.File {
-	// TODO: Implement recursive directory creation
-	// TODO: Implement file type checking
+	err := os.Mkdir("logs", 0777)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
