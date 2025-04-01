@@ -7,7 +7,7 @@ type MenuItem struct {
 	Price       float64
 }
 
-func (r *MenuItems) Validate() error {
+func (r *MenuItem) Validate() error {
 	switch {
 	case r.ID <= 0:
 		return ErrNotValidMenuID
