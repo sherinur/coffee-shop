@@ -1,6 +1,6 @@
 package model
 
-type Orders struct {
+type Order struct {
 	ID           int
 	CustomerName string
 	Status       string

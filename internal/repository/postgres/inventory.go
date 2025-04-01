@@ -34,3 +34,26 @@ func (i *Inventory) Create(ctx context.Context, item model.Inventory) error {
 
 	return nil
 }
+
+func (i *Inventory) Get(ctx context.Context, id int) (model.Inventory, error) {
+	var item dao.Inventory
+	query := "SELECT id, name, quantity, unit FROM " + i.table + " WHERE id = $1"
+
+	err := i.conn.QueryRow(query, id).Scan(&item.Id, &item.Name, &item.Quantity, &item.Unit)
+	if err != nil {
+		return model.Inventory{}, err
+	}
+
+	return dao.ToInventory(item), nil
+}
+
+func (i *Inventory) Delete(ctx context.Context, id int) error {
+	query := "DELETE FROM " + i.table + " WHERE id = $1"
+
+	_, err := i.conn.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
