@@ -1,6 +1,6 @@
 package model
 
-type MenuItems struct {
+type MenuItem struct {
 	ID          int
 	Name        string
 	Description string
