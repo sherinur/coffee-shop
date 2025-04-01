@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type Orders struct {
 	ID           int
 	CustomerName string
@@ -13,13 +11,13 @@ type Orders struct {
 func (r *Orders) Validate() error {
 	switch {
 	case r.ID <= 0:
-		return service.ErrNotValidOrderID
+		return ErrNotValidOrderID
 	case r.CustomerName == "":
-		return service.ErrNotValidOrderCustomerName
+		return ErrNotValidOrderCustomerName
 	case r.Status == "":
-		return service.ErrNotValidOrderStatus
+		return ErrNotValidOrderStatus
 	case r.CreatedAt == "":
-		return service.ErrNotValidCreatedAt
+		return ErrNotValidCreatedAt
 	default:
 		return nil
 	}

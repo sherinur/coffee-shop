@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type Inventory struct {
 	IngredientID int
 	Name         string
@@ -12,13 +10,13 @@ type Inventory struct {
 func (r *Inventory) Validate() error {
 	switch {
 	case r.IngredientID <= 0:
-		return service.ErrNotValidIngredientID
+		return ErrNotValidIngredientID
 	case r.Name == "":
-		return service.ErrNotValidIngredientName
+		return ErrNotValidIngredientName
 	case r.Quantity <= 0:
-		return service.ErrNotValidQuantity
+		return ErrNotValidQuantity
 	case r.Unit == "":
-		return service.ErrNotValidUnit
+		return ErrNotValidUnit
 	default:
 		return nil
 	}

@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type MenuItems struct {
 	ID          int
 	Name        string
@@ -12,13 +10,13 @@ type MenuItems struct {
 func (r *MenuItems) Validate() error {
 	switch {
 	case r.ID <= 0:
-		return service.ErrNotValidMenuID
+		return ErrNotValidMenuID
 	case r.Name == "":
-		return service.ErrNotValidMenuName
+		return ErrNotValidMenuName
 	case r.Description == "":
-		return service.ErrNotValidMenuDescription
+		return ErrNotValidMenuDescription
 	case r.Price <= 0:
-		return service.ErrNotValidPrice
+		return ErrNotValidPrice
 	default:
 		return nil
 	}

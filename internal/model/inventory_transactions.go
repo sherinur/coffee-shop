@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type InventoryTransactions struct {
 	TransactionID  int
 	IngredientId   int
@@ -13,15 +11,15 @@ type InventoryTransactions struct {
 func (r *InventoryTransactions) Validate() error {
 	switch {
 	case r.TransactionID <= 0:
-		return service.ErrInventoryItemNotFound
+		return ErrInventoryItemNotFound
 	case r.IngredientId <= 0:
-		return service.ErrDuplicateMenuIngredients
+		return ErrDuplicateMenuIngredients
 	case r.QuantityChange <= 0:
-		return service.ErrDuplicateMenuIngredients
+		return ErrDuplicateMenuIngredients
 	case r.Reason == "":
-		return service.ErrDuplicateMenuIngredients
+		return ErrDuplicateMenuIngredients
 	case r.CreatedAt == "":
-		return service.ErrDuplicateMenuIngredients
+		return ErrDuplicateMenuIngredients
 	default:
 		return nil
 	}

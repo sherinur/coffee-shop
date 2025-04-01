@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type OrderStatusHistory struct {
 	ID       int
 	OrderID  int
@@ -12,13 +10,13 @@ type OrderStatusHistory struct {
 func (r *OrderStatusHistory) Validate() error {
 	switch {
 	case r.ID <= 0:
-		return service.ErrNotValidOrderID
+		return ErrNotValidOrderID
 	case r.OrderID <= 0:
-		return service.ErrNotValidOrderID
+		return ErrNotValidOrderID
 	case r.OpenedAt == "":
-		return service.ErrNotValidStatusHistoryTime
+		return ErrNotValidStatusHistoryTime
 	case r.ClosedAt == "":
-		return service.ErrNotValidStatusHistoryTime
+		return ErrNotValidStatusHistoryTime
 	default:
 		return nil
 	}

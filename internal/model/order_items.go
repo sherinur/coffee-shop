@@ -1,9 +1,5 @@
 package model
 
-import (
-	"coffee-shop/internal/service"
-)
-
 type OrderItems struct {
 	OrderID   int
 	ProductID int
@@ -13,11 +9,11 @@ type OrderItems struct {
 func (r *OrderItems) Validate() error {
 	switch {
 	case r.OrderID <= 0:
-		return service.ErrNotValidOrderID
+		return ErrNotValidOrderID
 	case r.ProductID <= 0:
-		return service.ErrNotValidMenuID
+		return ErrNotValidMenuID
 	case r.Quantity <= 0:
-		return service.ErrNotValidQuantity
+		return ErrNotValidQuantity
 	default:
 		return nil
 	}

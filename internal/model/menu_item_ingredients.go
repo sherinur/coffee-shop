@@ -1,7 +1,5 @@
 package model
 
-import "coffee-shop/internal/service"
-
 type MenuItemIngredients struct {
 	MenuID       int
 	IngredientID int
@@ -11,11 +9,11 @@ type MenuItemIngredients struct {
 func (r *MenuItemIngredients) Validate() error {
 	switch {
 	case r.MenuID <= 0:
-		return service.ErrNotValidMenuID
+		return ErrNotValidMenuID
 	case r.IngredientID <= 0:
-		return service.ErrNotValidIngredientID
+		return ErrNotValidIngredientID
 	case r.Quantity <= 0:
-		return service.ErrNotValidQuantity
+		return ErrNotValidQuantity
 	default:
 		return nil
 	}
