@@ -54,7 +54,7 @@ func main() {
 
 	cfg := server.NewConfig(configPath, ":"+port, dir)
 
-	application, err := app.New(ctx, *cfg)
+	application, err := app.New(ctx, cfg)
 	if err != nil {
 		fmt.Println("failed to setup an application:", err)
 		os.Exit(1)
