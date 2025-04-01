@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 
+	"coffee-shop/internal/app"
 	"coffee-shop/internal/transport/http/server"
 	"coffee-shop/internal/utils"
-	"coffee-shop/pkg/logger"
 )
 
 // TODO: Test how flag parsing works, and find bugs
@@ -49,19 +50,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+
 	cfg := server.NewConfig(configPath, ":"+port, dir)
 
-	log := logger.SetupLogger(&logger.LoggerOptions{Env: cfg.Env, LogFilepath: cfg.Log_file})
-	if log == nil {
-		fmt.Println("Logger initialization failed (Logger instance is nil)")
+	application, err := app.New(ctx, *cfg)
+	if err != nil {
+		fmt.Println("failed to setup an application:", err)
 		os.Exit(1)
 	}
-	log.Info("Logger is initialized successfully")
 
-	apiServer := server.New(cfg, log)
-	err = apiServer.Start()
+	err = application.Run()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("error of application:", err)
 		os.Exit(1)
 	}
 }
