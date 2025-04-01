@@ -2,17 +2,17 @@ package service
 
 import (
 	"errors"
-	"strings"
 
+	"coffee-shop/internal/model"
 	"coffee-shop/internal/repository"
 	"coffee-shop/models"
 )
 
 type InventoryService interface {
-	AddInventoryItem(i models.InventoryItem) error
-	RetrieveInventoryItems() ([]models.InventoryItem, error)
-	RetrieveInventoryItem(id string) (*models.InventoryItem, error)
-	UpdateInventoryItem(id string, item models.InventoryItem) error
+	AddInventoryItem(i model.Inventory) error
+	RetrieveInventoryItems() ([]model.Inventory, error)
+	RetrieveInventoryItem(id string) (*model.Inventory, error)
+	UpdateInventoryItem(id string, item model.Inventory) error
 	DeleteInventoryItem(id string) error
 }
 
@@ -35,43 +35,43 @@ func NewInventoryService(repo repository.InventoryRepository) *inventoryService 
 // - ErrNotValidName if the Name is empty.
 // - ErrNotValidQuantity if the Quantity is zero or negative.
 // - ErrNotValidUnit if the Unit is empty.
-func ValidateItem(i models.InventoryItem) error {
-	if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
-		return ErrNotValidIngredientID
-	}
-	if strings.Contains(i.IngredientID, " ") {
-		return ErrNotValidIngredientID
-	}
+// func ValidateItem(i models.InventoryItem) error {
+// 	if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
+// 		return ErrNotValidIngredientID
+// 	}
+// 	if strings.Contains(i.IngredientID, " ") {
+// 		return ErrNotValidIngredientID
+// 	}
 
-	if i.Name == "" {
-		return ErrNotValidIngredientName
-	}
+// 	if i.Name == "" {
+// 		return ErrNotValidIngredientName
+// 	}
 
-	if i.Quantity < 0 || i.Quantity == -0 {
-		return ErrNotValidQuantity
-	}
+// 	if i.Quantity < 0 || i.Quantity == -0 {
+// 		return ErrNotValidQuantity
+// 	}
 
-	if i.Unit == "" {
-		return ErrNotValidUnit
-	}
+// 	if i.Unit == "" {
+// 		return ErrNotValidUnit
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // AddInventoryItem adds a new inventory item to the repository.
 // Returns nil if the addition is successful.
 // The following errors may be returned:
 // - ErrNotUniqueID if the item with the same ID already exists.
 // - An error if there is a validation issue or a failure when adding the item to the repository.
-func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
-	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
-		return err
-	} else if exists {
-		return ErrNotUniqueID
-	}
+func (s *inventoryService) AddInventoryItem(i models.Inventory) error {
+	// if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
+	// 	return err
+	// } else if exists {
+	// 	return ErrNotUniqueID
+	// }
 
 	// Item validation
-	if err := ValidateItem(i); err != nil {
+	if err := i.Validate(); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (s *inventoryService) AddInventoryItem(i models.InventoryItem) error {
 // Returns the items data in JSON format as a byte slice.
 // The following error may be returned:
 // - An error if there is a failure when retrieving items from the repository or when marshalling the data.
-func (s *inventoryService) RetrieveInventoryItems() ([]models.InventoryItem, error) {
+func (s *inventoryService) RetrieveInventoryItems() ([]models.Inventory, error) {
 	return s.InventoryRepository.GetAllItems()
 }
 
@@ -95,9 +95,9 @@ func (s *inventoryService) RetrieveInventoryItems() ([]models.InventoryItem, err
 // The following errors may be returned:
 // - ErrNoItem if the item with the specified ID is not found.
 // - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
-func (s *inventoryService) RetrieveInventoryItem(id string) (*models.InventoryItem, error) {
+func (s *inventoryService) RetrieveInventoryItem(id string) (*models.Inventory, error) {
 	if len(id) == 0 {
-		return nil, errors.New("identificator is not valid")
+		return nil, ErrNotValidIngredientID
 	}
 
 	inventoryItem, err := s.InventoryRepository.GetItemById(id)
@@ -117,16 +117,16 @@ func (s *inventoryService) RetrieveInventoryItem(id string) (*models.InventoryIt
 // - ErrNoItem if the old item is not found by id.
 // - ErrNotUniqueID if new item id not unique.
 // - An error if there is a validation issue or a failure when updating the repository.
-func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem) error {
+func (s *inventoryService) UpdateInventoryItem(id string, i models.Inventory) error {
 	if len(id) == 0 {
 		return errors.New("identificator is not valid")
 	}
 
-	if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
-		return err
-	} else if !exists {
-		return ErrNoItem
-	}
+	// if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
+	// 	return err
+	// } else if !exists {
+	// 	return ErrNoItem
+	// }
 
 	// Uniqueness test of new item
 	if i.IngredientID != id {
@@ -138,7 +138,7 @@ func (s *inventoryService) UpdateInventoryItem(id string, i models.InventoryItem
 	}
 
 	// New item validation
-	if err := ValidateItem(i); err != nil {
+	if err := i.Validate(); err != nil {
 		return err
 	}
 
