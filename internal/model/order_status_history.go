@@ -1,4 +1,4 @@
-package models
+package model
 
 type OrderStatusHistory struct {
 	ID       int

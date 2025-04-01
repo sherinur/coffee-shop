@@ -1,4 +1,4 @@
-package repository
+package json
 
 import (
 	"encoding/json"
