@@ -1,4 +1,4 @@
-package models
+package model
 
 type Inventory struct {
 	IngredientID int

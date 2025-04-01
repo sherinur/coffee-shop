@@ -1,4 +1,4 @@
-package models
+package model
 
 type MenuItemIngredients struct {
 	MenuID       int
