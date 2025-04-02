@@ -11,6 +11,7 @@ import (
 )
 
 const serviceName = "coffee-shop"
+const connStr = "user=latte password=latte dbname=frappuccino sslmode=disable"
 
 type App struct {
 	httpServer *server.Server
@@ -21,7 +22,6 @@ func New(ctx context.Context, cfg *server.Config) (*App, error) {
 	log := logger.SetupLogger(&logger.LoggerOptions{Env: cfg.Env, LogFilepath: cfg.Log_file})
 	log.Info("logger is initialized successfully")
 
-	connStr := "user=latte password=latte dbname=frappuccino sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
