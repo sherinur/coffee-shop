@@ -1,14 +1,13 @@
 package server
 
-import (
-	"coffee-shop/internal/repository"
-	"coffee-shop/internal/service"
-	"coffee-shop/internal/transport/http/handler"
-)
+import "coffee-shop/internal/transport/http/handler"
+
+// endpoint prefix patterns
+const inventoryPrefix = "/inventory"
 
 func (s *Server) registerRoutes() {
 	// Registering inventory routes
-	s.registerInventoryRoutes()
+	s.setupInventoryRoutes()
 
 	// // Registering  menu routes
 	// s.registerMenuRoutes()
@@ -20,32 +19,12 @@ func (s *Server) registerRoutes() {
 	// s.registerReportRoutes()
 }
 
-func (s *Server) registerInventoryRoutes() {
-	// Interfaces
-	inventoryRepository := repository.NewInventoryRepository(s.config.inventory_file)
-	if inventoryRepository == nil {
-		s.log.Warn("Failed to create inventory repository")
-	}
-
-	inventoryService := service.NewInventoryService(inventoryRepository)
-	if inventoryService == nil {
-		s.log.Warn("Failed to create inventory service")
-	}
-
-	inventoryHandler := handler.NewInventoryHandler(inventoryService, s.log)
-	if inventoryHandler == nil {
-		s.log.Warn("Failed to create inventory handler")
-	}
-
-	// Routes
-	s.r.POST("/inventory", inventoryHandler.AddInventoryItem)
-	s.r.GET("/inventory", inventoryHandler.GetInventoryItems)
-	s.r.GET("/inventory/{id}", inventoryHandler.GetInventoryItem)
-	s.r.PUT("/inventory/{id}", inventoryHandler.UpdateInventoryItem)
-	s.r.DELETE("/inventory/{id}", inventoryHandler.DeleteInventoryItem)
-
-	// logging
-	s.log.Info("Inventory routes is registered successfully")
+func (s *Server) setupInventoryRoutes(handler *handler.InventoryHandler) {
+	s.r.POST(inventoryPrefix, handler.AddInventoryItem)
+	s.r.GET(inventoryPrefix, handler.GetInventoryItems)
+	s.r.GET(inventoryPrefix+"/{id}", handler.GetInventoryItem)
+	s.r.PUT(inventoryPrefix+"/{id}", handler.UpdateInventoryItem)
+	s.r.DELETE(inventoryPrefix+"/{id}", handler.DeleteInventoryItem)
 }
 
 // func (s *Server) registerMenuRoutes() {
@@ -158,22 +137,4 @@ func (s *Server) registerInventoryRoutes() {
 
 // 	// logging
 // 	s.log.Info("Report routes is registered successfully")
-// }
-
-// func (s *Server) RequestMiddleware(next http.Handler) http.Handler {
-// 	allowedMethods := map[string]bool{
-// 		http.MethodGet:    true,
-// 		http.MethodPost:   true,
-// 		http.MethodPut:    true,
-// 		http.MethodDelete: true,
-// 	}
-
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		s.log.Info(fmt.Sprintf("Request %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr))
-// 		if !allowedMethods[r.Method] {
-// 			return
-// 		}
-
-// 		next.ServeHTTP(w, r)
-// 	})
 // }

@@ -22,19 +22,19 @@ type InventoryReader interface {
 	GetInventoryItem(*god.Context)
 }
 
-type inventoryHandler struct {
+type InventoryHandler struct {
 	inventoryService service.InventoryService
 	log              *slog.Logger
 }
 
-func NewInventoryHandler(s service.InventoryService, l *slog.Logger) *inventoryHandler {
-	return &inventoryHandler{inventoryService: s, log: l}
+func NewInventoryHandler(s service.InventoryService, l *slog.Logger) *InventoryHandler {
+	return &InventoryHandler{inventoryService: s, log: l}
 }
 
 // AddInventoryItem handles the HTTP request to add a new inventory item.
 // It processes the incoming request, validates the input, and interacts with the service layer to add the item.
 // If successful, it returns the added item as a JSON response with a 201 status code.
-func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
+func (h *InventoryHandler) AddInventoryItem(c *god.Context) {
 	var item models.InventoryItem
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
@@ -58,7 +58,7 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
 // It calls the service layer to get the list of inventory items, handles errors, and returns the data in the response.
-func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
+func (h *InventoryHandler) GetInventoryItems(c *god.Context) {
 	items, err := h.inventoryService.RetrieveInventoryItems()
 	if err != nil {
 		h.handleError(c, err)
@@ -74,7 +74,7 @@ func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
 }
 
 // GetInventoryItem handles the HTTP request to retrieve a specific inventory item by its ID.
-func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
+func (h *InventoryHandler) GetInventoryItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	item, err := h.inventoryService.RetrieveInventoryItem(id)
 	if err != nil {
@@ -91,7 +91,7 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 }
 
 // UpdateInventoryItem handles the HTTP request to update an existing inventory item by its ID.
-func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
+func (h *InventoryHandler) UpdateInventoryItem(c *god.Context) {
 	itemId := c.Request.PathValue("id")
 
 	var item models.InventoryItem
@@ -111,7 +111,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
+func (h *InventoryHandler) DeleteInventoryItem(c *god.Context) {
 	itemId := c.Request.PathValue("id")
 
 	err := h.inventoryService.DeleteInventoryItem(itemId)
@@ -124,7 +124,7 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (h *inventoryHandler) handleError(c *god.Context, err error) {
+func (h *InventoryHandler) handleError(c *god.Context, err error) {
 	var serviceErr *service.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
