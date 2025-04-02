@@ -3,15 +3,15 @@ package service
 import (
 	"strings"
 
+	"coffee-shop/internal/model"
 	"coffee-shop/internal/repository"
-	"coffee-shop/models"
 )
 
 type MenuService interface {
-	AddMenuItem(i models.MenuItem) error
-	RetrieveMenuItems() ([]models.MenuItem, error)
-	RetrieveMenuItem(id string) (*models.MenuItem, error)
-	UpdateMenuItem(id string, item models.MenuItem) error
+	AddMenuItem(i model.MenuItems) error
+	RetrieveMenuItems() ([]model.MenuItems, error)
+	RetrieveMenuItem(id string) (*model.MenuItems, error)
+	UpdateMenuItem(id string, item model.MenuItems) error
 	DeleteMenuItem(id string) error
 }
 
@@ -89,7 +89,7 @@ func ValidateMenuIngredient(i []models.MenuItemIngredient) error {
 // The following errors may be returned:
 // - ErrNotUniqueID if the item with the same ID already exists.
 // - An error if there is a validation issue or a failure when adding the item to the repository.
-func (s *menuService) AddMenuItem(i models.MenuItem) error {
+func (s *menuService) AddMenuItem(i model.MenuItems) error {
 	if exists, err := s.MenuRepository.MenuItemExists(i); err != nil {
 		return err
 	} else if exists {
@@ -97,7 +97,7 @@ func (s *menuService) AddMenuItem(i models.MenuItem) error {
 	}
 
 	// Item validation
-	if err := ValidateMenuItem(i); err != nil {
+	if err := i.Validate(); err != nil {
 		return err
 	}
 
@@ -108,11 +108,11 @@ func (s *menuService) AddMenuItem(i models.MenuItem) error {
 	return nil
 }
 
-func (s *menuService) RetrieveMenuItems() ([]models.MenuItem, error) {
+func (s *menuService) RetrieveMenuItems() ([]model.MenuItems, error) {
 	return s.MenuRepository.GetAllMenuItems()
 }
 
-func (s *menuService) RetrieveMenuItem(id string) (*models.MenuItem, error) {
+func (s *menuService) RetrieveMenuItem(id string) (*model.MenuItems, error) {
 	if len(id) == 0 {
 		return nil, ErrNotValidMenuID
 	}
@@ -143,13 +143,13 @@ func (s *menuService) RetrieveMenuItem(id string) (*models.MenuItem, error) {
 	return &menuItem, nil
 }
 
-func (s *menuService) UpdateMenuItem(id string, i models.MenuItem) error {
+func (s *menuService) UpdateMenuItem(id string, i model.MenuItems) error {
 	if len(id) == 0 {
 		return ErrNotValidMenuID
 	}
 
 	// Existence test of old item
-	if exists, err := s.MenuRepository.MenuItemExists(models.MenuItem{ID: id}); err != nil {
+	if exists, err := s.MenuRepository.MenuItemExists(model.MenuItems{ID: id}); err != nil {
 		return err
 	} else if !exists {
 		return ErrNoItem

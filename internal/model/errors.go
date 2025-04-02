@@ -1,4 +1,4 @@
-package service
+package model
 
 import (
 	"errors"
@@ -62,11 +62,22 @@ var (
 
 	ErrNotValidOrderID           error = NewServiceError("invalid order ID", http.StatusBadRequest, "order ID is not valid")
 	ErrNotValidOrderCustomerName error = NewServiceError("invalid order CustomeName", http.StatusBadRequest, "order CustomeName is not valid")
+	ErrNotValidOrderStatus       error = NewServiceError("invalid order status", http.StatusBadRequest, "order status is not valid")
+	ErrNotValidOrderNotes        error = NewServiceError("invalid order notes", http.StatusBadRequest, "orders notes is not valid")
 	ErrDuplicateOrderItems       error = NewServiceError("duplicate order Items", http.StatusBadRequest, "the items in the order must not be repeated")
 	ErrNotValidOrderItems        error = NewServiceError("invalid order Items", http.StatusBadRequest, "order items is not valid")
 	ErrNotValidOrderProductID    error = NewServiceError("invalid order product ID", http.StatusBadRequest, "product ID is not valid")
 	ErrNotValidStatusField       error = NewServiceError("invalid order product ID", http.StatusBadRequest, "product ID is not valid")
 	ErrNotValidCreatedAt         error = NewServiceError("invalid request", http.StatusBadRequest, "created_at field cannot be set manually")
+
+	// Order status history errors
+
+	ErrNotValidStatusHistoryTime error = NewServiceError("invalid time for history status", http.StatusBadRequest, "invalid time for history status")
+
+	// Price history errors
+
+	ErrNotValidPriceHistoryID error = NewServiceError("invalid price history id", http.StatusBadRequest, "price history id is not valid")
+	ErrNotValidChangedAtTime  error = NewServiceError("invalid price history time", http.StatusBadRequest, "price history time is not valid")
 
 	ErrNoOrder                    error = NewServiceError("order not found", http.StatusNotFound, "order not found")
 	ErrOrderProductNotFound       error = NewServiceError("product not found", http.StatusNotFound, "product not found")
