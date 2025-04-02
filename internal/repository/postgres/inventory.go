@@ -70,10 +70,11 @@ func (i *Inventory) GetAll(ctx context.Context) ([]model.Inventory, error) {
 	return items, nil
 }
 
-func (i *Inventory) Update(ctx context.Context, id int) error {
-	query := "UPDATE " + i.table + "WHERE id = $1"
+func (i *Inventory) Update(ctx context.Context, id int, item model.Inventory) error {
+	query := "UPDATE " + i.table + " SET name = $1, quantity = $2, unit = $3 WHERE id = $4"
+	daoItem := dao.FromInventory(item)
 
-	_, err := i.conn.Exec(query, id)
+	_, err := i.conn.Exec(query, daoItem.Name, daoItem.Quantity, daoItem.Unit, id)
 	if err != nil {
 		return err
 	}

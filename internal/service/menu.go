@@ -3,7 +3,7 @@ package service
 import (
 	"strings"
 
-	"coffee-shop/internal/repository"
+	"coffee-shop/internal/repository/postgres"
 	"coffee-shop/models"
 )
 
@@ -16,13 +16,10 @@ type MenuService interface {
 }
 
 type menuService struct {
-	MenuRepository repository.MenuRepository
+	MenuRepository postgres.Menu
 }
 
-func NewMenuService(repo repository.MenuRepository) *menuService {
-	if repo == nil {
-		return nil
-	}
+func NewMenuService(repo postgres.Menu) *menuService {
 	return &menuService{MenuRepository: repo}
 }
 
