@@ -23,51 +23,14 @@ func NewInventoryService(repo postgres.Inventory) *inventoryService {
 	return &inventoryService{InventoryRepo: repo}
 }
 
-// ValidateItem validates the fields of an InventoryItem.
-// Returns nil if the item is valid.
-// The following errors may be returned:
-// - ErrNotValidID if the IngredientID is empty.
-// - ErrIDContainsSpace if the IngredientID contains spaces.
-// - ErrNotValidName if the Name is empty.
-// - ErrNotValidQuantity if the Quantity is zero or negative.
-// - ErrNotValidUnit if the Unit is empty.
-// func ValidateItem(i models.InventoryItem) error {
-// 	if i.IngredientID == "" || strings.Contains(i.IngredientID, " ") {
-// 		return ErrNotValidIngredientID
-// 	}
-// 	if strings.Contains(i.IngredientID, " ") {
-// 		return ErrNotValidIngredientID
-// 	}
-
-// 	if i.Name == "" {
-// 		return ErrNotValidIngredientName
-// 	}
-
-// 	if i.Quantity < 0 || i.Quantity == -0 {
-// 		return ErrNotValidQuantity
-// 	}
-
-// 	if i.Unit == "" {
-// 		return ErrNotValidUnit
-// 	}
-
-// 	return nil
-// }
-
 // AddInventoryItem adds a new inventory item to the repository.
 // Returns nil if the addition is successful.
 // The following errors may be returned:
 // - ErrNotUniqueID if the item with the same ID already exists.
 // - An error if there is a validation issue or a failure when adding the item to the repository.
 func (s *inventoryService) AddInventoryItem(ctx context.Context, item model.Inventory) error {
-	// if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
-	// 	return err
-	// } else if exists {
-	// 	return ErrNotUniqueID
-	// }
-
 	// Item validation
-	if err := i.Validate(); err != nil {
+	if err := item.Validate(); err != nil {
 		return err
 	}
 
@@ -94,15 +57,7 @@ func (s *inventoryService) RetrieveInventoryItems(ctx context.Context) ([]model.
 // - An error if there is a failure when retrieving items from the repository or when marshalling the item data.
 func (s *inventoryService) RetrieveInventoryItem(ctx context.Context, id int) (*model.Inventory, error) {
 	item, err := s.InventoryRepo.Get(ctx, id)
-	if err != nil {
-		// TODO: Change the implementation of ErrNoItem
-		if err.Error() == "EOF" {
-			return nil, ErrNoItem
-		}
-		return nil, err
-	}
-
-	return &item, nil
+	return &item, err
 }
 
 // UpdateInventoryItem updates the old inventory item with the new one.
@@ -111,28 +66,9 @@ func (s *inventoryService) RetrieveInventoryItem(ctx context.Context, id int) (*
 // - ErrNoItem if the old item is not found by id.
 // - ErrNotUniqueID if new item id not unique.
 // - An error if there is a validation issue or a failure when updating the repository.
-func (s *inventoryService) UpdateInventoryItem(id string, i model.Inventory) error {
-	if len(id) == 0 {
-		return ErrNotValidIngredientID
-	}
-
-	// if exists, err := s.InventoryRepository.ItemExists(models.InventoryItem{IngredientID: id}); err != nil {
-	// 	return err
-	// } else if !exists {
-	// 	return ErrNoItem
-	// }
-
-	// Uniqueness test of new item
-	// if i.IngredientID != id {
-	// 	if exists, err := s.InventoryRepository.ItemExists(i); err != nil {
-	// 		return err
-	// 	} else if exists {
-	// 		return ErrNotUniqueID
-	// 	}
-	// }
-
+func (s *inventoryService) UpdateInventoryItem(ctx context.Context, id int, item model.Inventory) error {
 	// New item validation
-	if err := i.Validate(); err != nil {
+	if err := item.Validate(); err != nil {
 		return err
 	}
 

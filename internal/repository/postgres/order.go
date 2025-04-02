@@ -69,7 +69,7 @@ func (r *Order) GetAll(ctx context.Context) ([]model.Order, error) {
 	return order_all, nil
 }
 
-func (r *Order) UPDATE(ctx context.Context, order model.Order, id int) error {
+func (r *Order) Update(ctx context.Context, id int, order model.Order) error {
 	object := dao.FromOrder(order)
 	query := "UPDATE " + r.table + " SET customer_name = $1, status = $2, notes = $3 WHERE id = $4"
 
@@ -81,7 +81,7 @@ func (r *Order) UPDATE(ctx context.Context, order model.Order, id int) error {
 	return nil
 }
 
-func (r *Order) DELETE(ctx context.Context, id int) error {
+func (r *Order) Delete(ctx context.Context, id int) error {
 	query := "DELETE FROM " + r.table + " WHERE id = $1"
 
 	_, err := r.conn.Exec(query, id)

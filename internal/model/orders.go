@@ -7,6 +7,9 @@ type Order struct {
 	Notes        string
 }
 
+// TODO: Write inventory suffiency validation
+// TODO: Implement status and date logic
+
 func (r *Order) Validate() error {
 	switch {
 	case r.ID <= 0:

@@ -8,7 +8,6 @@ import (
 
 	"coffee-shop/internal/service"
 	"coffee-shop/internal/transport/dto/response"
-	"coffee-shop/models"
 )
 
 type InventoryWriter interface {
@@ -35,7 +34,7 @@ func NewInventoryHandler(s service.InventoryService, l *slog.Logger) *InventoryH
 // It processes the incoming request, validates the input, and interacts with the service layer to add the item.
 // If successful, it returns the added item as a JSON response with a 201 status code.
 func (h *InventoryHandler) AddInventoryItem(c *god.Context) {
-	var item models.InventoryItem
+	var item model.InventoryItem
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
@@ -94,7 +93,7 @@ func (h *InventoryHandler) GetInventoryItem(c *god.Context) {
 func (h *InventoryHandler) UpdateInventoryItem(c *god.Context) {
 	itemId := c.Request.PathValue("id")
 
-	var item models.InventoryItem
+	var item model.InventoryItem
 	err := c.ShouldBindJSON(item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
