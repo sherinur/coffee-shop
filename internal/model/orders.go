@@ -1,10 +1,13 @@
 package model
 
+import "time"
+
 type Order struct {
 	ID           int
 	CustomerName string
 	Status       string
 	Notes        string
+	CreateAt     time.Time
 }
 
 func (r *Order) Validate() error {

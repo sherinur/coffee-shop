@@ -1,11 +1,13 @@
 package model
 
+import "time"
+
 type InventoryTransactions struct {
 	TransactionID  int
 	IngredientId   int
-	QuantityChange float64
+	QuantityChange int
 	Reason         string
-	CreatedAt      string
+	CreatedAt      time.Time
 }
 
 func (r *InventoryTransactions) Validate() error {
@@ -17,8 +19,6 @@ func (r *InventoryTransactions) Validate() error {
 	case r.QuantityChange <= 0:
 		return ErrDuplicateMenuIngredients
 	case r.Reason == "":
-		return ErrDuplicateMenuIngredients
-	case r.CreatedAt == "":
 		return ErrDuplicateMenuIngredients
 	default:
 		return nil

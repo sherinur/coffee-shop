@@ -1,8 +1,12 @@
 package model
 
+import "time"
+
 type OrderStatusHistory struct {
-	ID      int
-	OrderID int
+	ID       int
+	OrderID  int
+	OpenedAt time.Time
+	ClosedAt time.Time
 }
 
 func (r *OrderStatusHistory) Validate() error {
