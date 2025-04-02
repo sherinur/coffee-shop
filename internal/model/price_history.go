@@ -1,10 +1,12 @@
 package model
 
+import "time"
+
 type PriceHistory struct {
 	HistoryID  int
 	MenuItemID int
 	Price      float64
-	ChangedAt  string
+	ChangedAt  time.Time
 }
 
 func (r *PriceHistory) Validate() error {
@@ -15,8 +17,6 @@ func (r *PriceHistory) Validate() error {
 		return ErrNotValidMenuID
 	case r.Price <= 0:
 		return ErrNotValidPrice
-	case r.ChangedAt == "":
-		return ErrNotValidChangedAtTime
 	default:
 		return nil
 	}
