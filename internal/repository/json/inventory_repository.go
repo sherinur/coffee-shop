@@ -1,9 +1,5 @@
 package json
 
-import (
-	"coffee-shop/models"
-)
-
 type InventoryRepository interface {
 	AddItem(i models.InventoryItem) (*models.InventoryItem, error)
 	GetAllItems() ([]models.InventoryItem, error)
