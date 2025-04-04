@@ -6,14 +6,6 @@ import (
 	"context"
 )
 
-type MenuService interface {
-	AddMenuItem(i model.MenuItem) error
-	RetrieveMenuItems() ([]model.MenuItem, error)
-	RetrieveMenuItem(id string) (*model.MenuItem, error)
-	UpdateMenuItem(id string, item model.MenuItem) error
-	DeleteMenuItem(id string) error
-}
-
 type menuService struct {
 	MenuRepo postgres.Menu
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"coffee-shop/internal/model"
 	"coffee-shop/internal/service"
 	"coffee-shop/internal/transport/dto/response"
 )
@@ -22,26 +23,26 @@ type InventoryReader interface {
 }
 
 type InventoryHandler struct {
-	inventoryService service.InventoryService
-	log              *slog.Logger
+	service InventoryService
+	log     *slog.Logger
 }
 
-func NewInventoryHandler(s service.InventoryService, l *slog.Logger) *InventoryHandler {
-	return &InventoryHandler{inventoryService: s, log: l}
+func NewInventoryHandler(s InventoryService, l *slog.Logger) *InventoryHandler {
+	return &InventoryHandler{service: s, log: l}
 }
 
 // AddInventoryItem handles the HTTP request to add a new inventory item.
 // It processes the incoming request, validates the input, and interacts with the service layer to add the item.
 // If successful, it returns the added item as a JSON response with a 201 status code.
 func (h *InventoryHandler) AddInventoryItem(c *god.Context) {
-	var item model.InventoryItem
+	var item model.Inventory
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
 	}
 
-	err = h.inventoryService.AddInventoryItem(item)
+	err = h.service.AddInventoryItem(item)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -58,7 +59,7 @@ func (h *InventoryHandler) AddInventoryItem(c *god.Context) {
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
 // It calls the service layer to get the list of inventory items, handles errors, and returns the data in the response.
 func (h *InventoryHandler) GetInventoryItems(c *god.Context) {
-	items, err := h.inventoryService.RetrieveInventoryItems()
+	items, err := h.service.RetrieveInventoryItems()
 	if err != nil {
 		h.handleError(c, err)
 		return

@@ -10,24 +10,24 @@ import (
 	"coffee-shop/models"
 )
 
-type MenuWriter interface {
-	AddMenuItem(*god.Context)
-	UpdateMenuItem(*god.Context)
-	DeleteMenuItem(*god.Context)
-}
+// type MenuWriter interface {
+// 	AddMenuItem(*god.Context)
+// 	UpdateMenuItem(*god.Context)
+// 	DeleteMenuItem(*god.Context)
+// }
 
-type MenuReader interface {
-	GetMenuItems(*god.Context)
-	GetMenuItem(*god.Context)
-}
+// type MenuReader interface {
+// 	GetMenuItems(*god.Context)
+// 	GetMenuItem(*god.Context)
+// }
 
 type menuHandler struct {
-	MenuService service.MenuService
-	log         *slog.Logger
+	service MenuService
+	log     *slog.Logger
 }
 
-func NewMenuHandler(s service.MenuService, l *slog.Logger) *menuHandler {
-	return &menuHandler{MenuService: s, log: l}
+func NewMenuHandler(s MenuService, l *slog.Logger) *menuHandler {
+	return &menuHandler{service: s, log: l}
 }
 
 // AddMenuItem handles the HTTP request to add a new menu item.
@@ -41,7 +41,7 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 	}
 	h.log.Debug("Adding new menu item", slog.Any("MenuItem", item))
 
-	err = h.MenuService.AddMenuItem(item)
+	err = h.service.AddMenuItem(item)
 	if err != nil {
 		h.handleError(c, err)
 	}
@@ -53,7 +53,7 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 // GetMenuItems handles the HTTP request to retrieve all menu items.
 // It calls the service layer to fetch the data and returns it to the client.
 func (h *menuHandler) GetMenuItems(c *god.Context) {
-	items, err := h.MenuService.RetrieveMenuItems()
+	items, err := h.service.RetrieveMenuItems()
 	if err != nil {
 		h.handleError(c, err)
 	}
@@ -66,7 +66,7 @@ func (h *menuHandler) GetMenuItems(c *god.Context) {
 // and returns the result to the client. In case of errors, it responds with the appropriate error message.
 func (h *menuHandler) GetMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
-	item, err := h.MenuService.RetrieveMenuItem(id)
+	item, err := h.service.RetrieveMenuItem(id)
 	if err != nil {
 		h.handleError(c, err)
 	}
@@ -87,7 +87,7 @@ func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 	}
 
 	id := c.Request.PathValue("id")
-	err = h.MenuService.UpdateMenuItem(id, item)
+	err = h.service.UpdateMenuItem(id, item)
 	if err != nil {
 		h.handleError(c, err)
 	}
@@ -100,7 +100,7 @@ func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 // responds with the appropriate HTTP status and message.
 func (h *menuHandler) DeleteMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
-	err := h.MenuService.DeleteMenuItem(id)
+	err := h.service.DeleteMenuItem(id)
 	if err != nil {
 		h.handleError(c, err)
 	}
