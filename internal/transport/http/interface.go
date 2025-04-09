@@ -1,4 +1,4 @@
-package http
+package hp
 
 import "coffee-shop/internal/transport/http/handler"
 

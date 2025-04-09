@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"coffee-shop/internal/model"
+	"coffee-shop/internal/service"
 )
 
 // type MenuWriter interface {
@@ -109,7 +110,7 @@ func (h *menuHandler) DeleteMenuItem(c *god.Context) {
 }
 
 func (h *menuHandler) handleError(c *god.Context, err error) {
-	var serviceErr *model.ServiceError
+	var serviceErr *service.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
 	} else {

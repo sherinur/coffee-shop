@@ -2,6 +2,8 @@ package app
 
 import (
 	"coffee-shop/internal/repository/postgres"
+	"coffee-shop/internal/service"
+	"coffee-shop/internal/transport/http/handler"
 	"coffee-shop/internal/transport/http/server"
 	"coffee-shop/pkg/logger"
 	"context"
@@ -28,13 +30,17 @@ func New(ctx context.Context, cfg *server.Config) (*App, error) {
 	}
 
 	// TODO: Repository
-	postgres.NewInventory(db)
+	inventoryRepo := postgres.NewInventory(db)
 	postgres.NewMenu(db)
 	postgres.NewOrder(db)
 
 	// TODO: UseCase
 
+	inventoryService := service.NewInventoryService(inventoryRepo)
+
 	// TODO: http service
+
+	handler.NewInventoryHandler(inventoryService, log)
 
 	return &App{
 		httpServer: server.New(cfg, log),

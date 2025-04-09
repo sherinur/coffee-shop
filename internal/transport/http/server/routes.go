@@ -12,7 +12,7 @@ const (
 func (s *Server) registerRoutes() {
 
 	// Registering inventory routes
-	s.setupInventoryRoutes()
+	// s.setupInventoryRoutes()
 
 	// // Registering  menu routes
 	// s.registerMenuRoutes()
@@ -24,7 +24,7 @@ func (s *Server) registerRoutes() {
 	// s.registerReportRoutes()
 }
 
-func (s *Server) setupInventoryRoutes(handler *handler.InventoryHandler) {
+func (s *Server) setupInventoryRoutes(handler handler.InventoryHandler) {
 	s.r.POST(inventoryPrefix, handler.AddInventoryItem)
 	s.r.GET(inventoryPrefix, handler.GetInventoryItems)
 	s.r.GET(inventoryPrefix+"/{id}", handler.GetInventoryItem)

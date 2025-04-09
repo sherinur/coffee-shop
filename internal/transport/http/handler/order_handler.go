@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"coffee-shop/internal/model"
+	"coffee-shop/internal/service"
 )
 
 type OrderWriter interface {
@@ -110,7 +111,7 @@ func (h *orderHandler) CloseOrder(c *god.Context) {
 }
 
 func (h *orderHandler) handleError(c *god.Context, err error) {
-	var serviceErr *model.ServiceError
+	var serviceErr *service.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
 	} else {
