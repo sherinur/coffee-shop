@@ -22,12 +22,12 @@ type InventoryHandler interface {
 }
 
 type inventoryHandler struct {
-	InventoryService InventoryService
-	log              *slog.Logger
+	service InventoryService
+	log     *slog.Logger
 }
 
 func NewInventoryHandler(s InventoryService, l *slog.Logger) *inventoryHandler {
-	return &inventoryHandler{InventoryService: s, log: l}
+	return &inventoryHandler{service: s, log: l}
 }
 
 // AddInventoryItem handles the HTTP request to add a new inventory item.
@@ -41,7 +41,12 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 		return
 	}
 
-	err = h.InventoryService.AddInventoryItem(context.TODO(), item.ToDomain())
+	err = item.Validate()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, god.H{"error": err.Error()})
+	}
+
+	err = h.service.AddInventoryItem(context.TODO(), item.ToDomain())
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -58,7 +63,7 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
 // It calls the service layer to get the list of inventory items, handles errors, and returns the data in the response.
 func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
-	object, err := h.InventoryService.RetrieveInventoryItems(context.TODO())
+	object, err := h.service.RetrieveInventoryItems(context.TODO())
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -86,7 +91,7 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 		return
 	}
 
-	object, err := h.InventoryService.RetrieveInventoryItem(context.TODO(), itemID)
+	object, err := h.service.RetrieveInventoryItem(context.TODO(), itemID)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -118,7 +123,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 		return
 	}
 
-	err = h.InventoryService.UpdateInventoryItem(context.TODO(), itemID, item.ToDomain())
+	err = h.service.UpdateInventoryItem(context.TODO(), itemID, item.ToDomain())
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -136,7 +141,7 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 		return
 	}
 
-	err = h.InventoryService.DeleteInventoryItem(context.TODO(), itemID)
+	err = h.service.DeleteInventoryItem(context.TODO(), itemID)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -146,7 +151,7 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (h *inventoryHandler) handleError(c *god.Context, err error) {
+func (h *inventoryHandler) handleError(c *god.Context, err error, code int) {
 	var serviceErr *service.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())

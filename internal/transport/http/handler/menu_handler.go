@@ -1,25 +1,24 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"god"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"coffee-shop/internal/model"
 	"coffee-shop/internal/service"
 )
 
-// type MenuWriter interface {
-// 	AddMenuItem(*god.Context)
-// 	UpdateMenuItem(*god.Context)
-// 	DeleteMenuItem(*god.Context)
-// }
-
-// type MenuReader interface {
-// 	GetMenuItems(*god.Context)
-// 	GetMenuItem(*god.Context)
-// }
+type MenuItem interface {
+	AddMenuItem(*god.Context)
+	UpdateMenuItem(*god.Context)
+	GetMenuItems(*god.Context)
+	GetMenuItem(*god.Context)
+	DeleteMenuItem(*god.Context)
+}
 
 type menuHandler struct {
 	service MenuService
@@ -41,9 +40,10 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 	}
 	h.log.Debug("Adding new menu item", slog.Any("MenuItem", item))
 
-	err = h.service.AddMenuItem(item)
+	err = h.service.AddMenuItem(context.TODO(), item)
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 
 	h.log.Info("Successfully added new menu item", slog.Any("MenuItem", item))
@@ -53,9 +53,10 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 // GetMenuItems handles the HTTP request to retrieve all menu items.
 // It calls the service layer to fetch the data and returns it to the client.
 func (h *menuHandler) GetMenuItems(c *god.Context) {
-	items, err := h.service.RetrieveMenuItems()
+	items, err := h.service.RetrieveMenuItems(context.TODO())
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
 	h.log.Debug("Retrieved Menu items")
 	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": items})
@@ -66,10 +67,18 @@ func (h *menuHandler) GetMenuItems(c *god.Context) {
 // and returns the result to the client. In case of errors, it responds with the appropriate error message.
 func (h *menuHandler) GetMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
-	item, err := h.service.RetrieveMenuItem(id)
+	itemID, err := strconv.Atoi(id)
 	if err != nil {
 		h.handleError(c, err)
+		return
 	}
+
+	item, err := h.service.RetrieveMenuItem(context.TODO(), itemID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
 	h.log.Debug("Retrieved menu item with ID", slog.String("id", id))
 	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": item})
 }
@@ -87,7 +96,12 @@ func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 	}
 
 	id := c.Request.PathValue("id")
-	err = h.service.UpdateMenuItem(id, item)
+	itemID, err := strconv.Atoi(id)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+	err = h.service.UpdateMenuItem(context.TODO(), itemID, item)
 	if err != nil {
 		h.handleError(c, err)
 	}
@@ -100,7 +114,11 @@ func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 // responds with the appropriate HTTP status and message.
 func (h *menuHandler) DeleteMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
-	err := h.service.DeleteMenuItem(id)
+	itemID, err := strconv.Atoi(id)
+	if err != nil {
+		h.handleError(c, err)
+	}
+	err = h.service.DeleteMenuItem(context.TODO(), itemID)
 	if err != nil {
 		h.handleError(c, err)
 	}
