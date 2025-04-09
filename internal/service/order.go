@@ -7,18 +7,6 @@ import (
 	"coffee-shop/internal/repository/postgres"
 )
 
-type OrderService interface {
-	AddOrder(o model.Order) error
-	RetrieveOrders() ([]model.Order, error)
-	RetrieveOrder(id string) (model.Order, error)
-	UpdateOrder(id string, item model.Order) error
-	DeleteOrder(id string) error
-	CloseOrder(id string) error
-	// IsInventorySufficient(orderItems []models.OrderItem) (bool, error)
-	// ReduceIngredients(orderItems []models.OrderItem) error
-	// CalculateTotalSales() (float64, error)
-}
-
 type orderService struct {
 	OrderRepo     postgres.Order
 	MenuRepo      postgres.Menu

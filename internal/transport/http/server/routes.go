@@ -3,9 +3,14 @@ package server
 import "coffee-shop/internal/transport/http/handler"
 
 // endpoint prefix patterns
-const inventoryPrefix = "/inventory"
+const (
+	inventoryPrefix = "/inventory"
+	menuPrefix      = "/menu"
+	orderPrefix     = "/order"
+)
 
 func (s *Server) registerRoutes() {
+
 	// Registering inventory routes
 	s.setupInventoryRoutes()
 

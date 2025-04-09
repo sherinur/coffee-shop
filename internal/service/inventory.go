@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"coffee-shop/internal/model"
-	"coffee-shop/internal/repository/postgres"
 )
 
 type InventoryService interface {
@@ -16,10 +15,10 @@ type InventoryService interface {
 }
 
 type inventoryService struct {
-	InventoryRepo postgres.Inventory
+	InventoryRepo InventoryRepo
 }
 
-func NewInventoryService(repo postgres.Inventory) *inventoryService {
+func NewInventoryService(repo InventoryRepo) *inventoryService {
 	return &inventoryService{InventoryRepo: repo}
 }
 

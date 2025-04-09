@@ -1,18 +1,22 @@
 package dto
 
-type InventoryItemRequest struct {
-	IngredientID string  `json:"ingredient_id"`
-	Name         string  `json:"name"`
-	Quantity     float64 `json:"quantity"`
-	Unit         string  `json:"unit"`
+import "coffee-shop/internal/model"
+
+type InventoryRequest struct {
+	Name     string `json:"name"`
+	Quantity int    `json:"quantity"`
+	Unit     string `json:"unit"`
 }
 
-func (r *InventoryItemRequest) Validate() error {
-	// TODO: Write validation logic here
-	if r.IngredientID == "" {
-		return nil
+func (r *InventoryRequest) ToDomain() model.Inventory {
+	return model.Inventory{
+		Name:     r.Name,
+		Quantity: r.Quantity,
+		Unit:     r.Unit,
 	}
+}
 
+func (r *InventoryRequest) Validate() error {
 	if r.Name == "" {
 		return nil
 	}
