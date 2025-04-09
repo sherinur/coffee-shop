@@ -4,22 +4,8 @@ import (
 	"context"
 
 	"coffee-shop/internal/model"
-	"coffee-shop/internal/repository"
 	"coffee-shop/internal/repository/postgres"
-	"coffee-shop/models"
 )
-
-type OrderService interface {
-	AddOrder(o models.Order) error
-	RetrieveOrders() ([]models.Order, error)
-	RetrieveOrder(id string) (models.Order, error)
-	UpdateOrder(id string, item models.Order) error
-	DeleteOrder(id string) error
-	CloseOrder(id string) error
-	// IsInventorySufficient(orderItems []models.OrderItem) (bool, error)
-	// ReduceIngredients(orderItems []models.OrderItem) error
-	// CalculateTotalSales() (float64, error)
-}
 
 type orderService struct {
 	OrderRepo     postgres.Order
@@ -28,8 +14,8 @@ type orderService struct {
 	ReportRepo    any
 }
 
-func NewOrderService(or repository.OrderRepository, menu repository.MenuRepository, ir repository.InventoryRepository, re any) *orderService {
-	return &orderService{OrderRepo: or, MenuRepo: menu, InventoryRepo: ir, ReportRepo: re}
+func NewOrderService(or postgres.Order, mr postgres.Menu, ir postgres.Inventory, re any) *orderService {
+	return &orderService{OrderRepo: or, MenuRepo: mr, InventoryRepo: ir, ReportRepo: re}
 }
 
 func (s *orderService) AddOrder(ctx context.Context, order model.Order) error {

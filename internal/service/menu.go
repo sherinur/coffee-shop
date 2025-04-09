@@ -27,10 +27,6 @@ func (s *menuService) AddMenuItem(ctx context.Context, item model.MenuItem) erro
 
 	s.MenuRepo.Create(ctx, item)
 
-	if _, err := s.MenuRepo.AddMenuItem(item); err != nil {
-		return err
-	}
-
 	return nil
 }
 

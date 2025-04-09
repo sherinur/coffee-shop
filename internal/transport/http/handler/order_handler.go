@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"coffee-shop/internal/service"
-	"coffee-shop/models"
+	"coffee-shop/internal/model"
 )
 
 type OrderWriter interface {
@@ -23,17 +22,18 @@ type OrderReader interface {
 }
 
 type orderHandler struct {
-	OrderService service.OrderService
+	OrderService OrderService
 	log          *slog.Logger
 }
 
-func NewOrderHandler(s service.OrderService, l *slog.Logger) *orderHandler {
+func NewOrderHandler(s OrderService, l *slog.Logger) *orderHandler {
 	return &orderHandler{OrderService: s, log: l}
 }
 
 func (h *orderHandler) CreateOrder(c *god.Context) {
-	var order models.Order
+	var order model.Order
 	err := c.ShouldBindJSON(&order)
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
@@ -74,7 +74,7 @@ func (h *orderHandler) RetrieveOrder(c *god.Context) {
 
 func (h *orderHandler) UpdateOrder(c *god.Context) {
 	id := c.Request.PathValue("id")
-	var order models.Order
+	var order model.Order
 	err := c.ShouldBindJSON(&order)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
@@ -110,7 +110,7 @@ func (h *orderHandler) CloseOrder(c *god.Context) {
 }
 
 func (h *orderHandler) handleError(c *god.Context, err error) {
-	var serviceErr *service.ServiceError
+	var serviceErr *model.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
 	} else {

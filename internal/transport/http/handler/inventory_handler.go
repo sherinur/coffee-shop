@@ -7,20 +7,20 @@ import (
 	"net/http"
 
 	"coffee-shop/internal/model"
-	"coffee-shop/internal/service"
+	dto "coffee-shop/internal/transport/dto/inventory"
 	"coffee-shop/internal/transport/dto/response"
 )
 
-type InventoryWriter interface {
-	AddInventoryItem(*god.Context)
-	UpdateInventoryItem(*god.Context)
-	DeleteInventoryItem(*god.Context)
-}
+// type InventoryWriter interface {
+// 	AddInventoryItem(*god.Context)
+// 	UpdateInventoryItem(*god.Context)
+// 	DeleteInventoryItem(*god.Context)
+// }
 
-type InventoryReader interface {
-	GetInventoryItems(*god.Context)
-	GetInventoryItem(*god.Context)
-}
+// type InventoryReader interface {
+// 	GetInventoryItems(*god.Context)
+// 	GetInventoryItem(*god.Context)
+// }
 
 type InventoryHandler struct {
 	service InventoryService
@@ -35,14 +35,14 @@ func NewInventoryHandler(s InventoryService, l *slog.Logger) *InventoryHandler {
 // It processes the incoming request, validates the input, and interacts with the service layer to add the item.
 // If successful, it returns the added item as a JSON response with a 201 status code.
 func (h *InventoryHandler) AddInventoryItem(c *god.Context) {
-	var item model.Inventory
+	var item dto.InventoryRequest
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
 	}
 
-	err = h.service.AddInventoryItem(item)
+	err = h.service.AddInventoryItem(item.ToDomain())
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -76,7 +76,7 @@ func (h *InventoryHandler) GetInventoryItems(c *god.Context) {
 // GetInventoryItem handles the HTTP request to retrieve a specific inventory item by its ID.
 func (h *InventoryHandler) GetInventoryItem(c *god.Context) {
 	id := c.Request.PathValue("id")
-	item, err := h.inventoryService.RetrieveInventoryItem(id)
+	item, err := h.service.RetrieveInventoryItem(id)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -94,14 +94,14 @@ func (h *InventoryHandler) GetInventoryItem(c *god.Context) {
 func (h *InventoryHandler) UpdateInventoryItem(c *god.Context) {
 	itemId := c.Request.PathValue("id")
 
-	var item model.InventoryItem
+	var item model.Inventory
 	err := c.ShouldBindJSON(item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
 	}
 
-	err = h.inventoryService.UpdateInventoryItem(itemId, item)
+	err = h.service.UpdateInventoryItem(itemId, item)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -114,7 +114,7 @@ func (h *InventoryHandler) UpdateInventoryItem(c *god.Context) {
 func (h *InventoryHandler) DeleteInventoryItem(c *god.Context) {
 	itemId := c.Request.PathValue("id")
 
-	err := h.inventoryService.DeleteInventoryItem(itemId)
+	err := h.service.DeleteInventoryItem(itemId)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -125,7 +125,7 @@ func (h *InventoryHandler) DeleteInventoryItem(c *god.Context) {
 }
 
 func (h *InventoryHandler) handleError(c *god.Context, err error) {
-	var serviceErr *service.ServiceError
+	var serviceErr *model.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
 		return

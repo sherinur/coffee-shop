@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"coffee-shop/internal/service"
-	"coffee-shop/models"
+	"coffee-shop/internal/model"
 )
 
 // type MenuWriter interface {
@@ -33,7 +32,7 @@ func NewMenuHandler(s MenuService, l *slog.Logger) *menuHandler {
 // AddMenuItem handles the HTTP request to add a new menu item.
 // It processes the request body, validates the input, and calls the service layer to add the item.
 func (h *menuHandler) AddMenuItem(c *god.Context) {
-	var item models.MenuItem
+	var item model.MenuItem
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
@@ -79,7 +78,7 @@ func (h *menuHandler) GetMenuItem(c *god.Context) {
 // calls the service layer to update the menu item. In case of errors, it responds
 // with the appropriate HTTP status and error message.
 func (h *menuHandler) UpdateMenuItem(c *god.Context) {
-	var item models.MenuItem
+	var item model.MenuItem
 	err := c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
@@ -110,7 +109,7 @@ func (h *menuHandler) DeleteMenuItem(c *god.Context) {
 }
 
 func (h *menuHandler) handleError(c *god.Context, err error) {
-	var serviceErr *service.ServiceError
+	var serviceErr *model.ServiceError
 	if errors.As(err, &serviceErr) {
 		c.JSON(serviceErr.Code, serviceErr.Hash())
 	} else {
