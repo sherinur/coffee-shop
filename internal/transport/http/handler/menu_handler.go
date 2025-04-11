@@ -10,12 +10,13 @@ import (
 
 	"coffee-shop/internal/model"
 	"coffee-shop/internal/service"
+	dto "coffee-shop/internal/transport/dto/menu"
 )
 
 type MenuItem interface {
 	AddMenuItem(*god.Context)
 	UpdateMenuItem(*god.Context)
-	GetMenuItems(*god.Context)
+	GetAllMenuItems(c *god.Context)
 	GetMenuItem(*god.Context)
 	DeleteMenuItem(*god.Context)
 }
@@ -32,15 +33,16 @@ func NewMenuHandler(s MenuService, l *slog.Logger) *menuHandler {
 // AddMenuItem handles the HTTP request to add a new menu item.
 // It processes the request body, validates the input, and calls the service layer to add the item.
 func (h *menuHandler) AddMenuItem(c *god.Context) {
-	var item model.MenuItem
-	err := c.ShouldBindJSON(&item)
+	var menu dto.MenuItemRequest
+	err := c.ShouldBindJSON(&menu)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
 	}
-	h.log.Debug("Adding new menu item", slog.Any("MenuItem", item))
+	h.log.Debug("Adding new menu item", slog.Any("MenuItem", menu))
 
-	err = h.service.AddMenuItem(context.TODO(), item)
+	item, ingredients := dto.ToDomain(menu)
+	err = h.service.AddMenuItem(context.TODO(), item, ingredients)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -52,7 +54,7 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 
 // GetMenuItems handles the HTTP request to retrieve all menu items.
 // It calls the service layer to fetch the data and returns it to the client.
-func (h *menuHandler) GetMenuItems(c *god.Context) {
+func (h *menuHandler) GetAllMenuItems(c *god.Context) {
 	items, err := h.service.RetrieveMenuItems(context.TODO())
 	if err != nil {
 		h.handleError(c, err)
@@ -73,14 +75,16 @@ func (h *menuHandler) GetMenuItem(c *god.Context) {
 		return
 	}
 
-	item, err := h.service.RetrieveMenuItem(context.TODO(), itemID)
+	item, ingredient, err := h.service.RetrieveMenuItemWithId(context.TODO(), itemID)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
+	menu := dto.NewMenuItemResponse(item, ingredient)
+
 	h.log.Debug("Retrieved menu item with ID", slog.String("id", id))
-	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": item})
+	c.JSON(http.StatusOK, god.H{"code": http.StatusOK, "body": menu})
 }
 
 // UpdateMenuItem handles the HTTP request to update an existing menu item.

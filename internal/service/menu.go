@@ -7,11 +7,14 @@ import (
 )
 
 type menuService struct {
-	MenuRepo postgres.Menu
+	MenuRepo            postgres.Menu
+	MenuIngredientsRepo postgres.MenuItemIngredients
 }
 
-func NewMenuService(repo postgres.Menu) *menuService {
-	return &menuService{MenuRepo: repo}
+func NewMenuService(menuRepo postgres.Menu, menuIngRepo postgres.MenuItemIngredients) *menuService {
+	return &menuService{
+		MenuRepo:            menuRepo,
+		MenuIngredientsRepo: menuIngRepo}
 }
 
 // AddMenuItem adds a new menu item to the repository.
@@ -19,15 +22,28 @@ func NewMenuService(repo postgres.Menu) *menuService {
 // The following errors may be returned:
 // - ErrNotUniqueID if the item with the same ID already exists.
 // - An error if there is a validation issue or a failure when adding the item to the repository.
-func (s *menuService) AddMenuItem(ctx context.Context, item model.MenuItem) error {
+func (s *menuService) AddMenuItem(ctx context.Context, menu model.MenuItem, ingredients []model.MenuItemIngredients) error {
 	// Item validation
-	if err := item.Validate(); err != nil {
+	if err := menu.Validate(); err != nil {
 		return err
 	}
 
-	err := s.MenuRepo.Create(ctx, item)
+	for _, i := range ingredients {
+		if err := i.Validate(); err != nil {
+			return err
+		}
+	}
+
+	err := s.MenuRepo.Create(ctx, menu)
 	if err != nil {
 		return err
+	}
+
+	for _, i := range ingredients {
+		err := s.MenuIngredientsRepo.Create(ctx, i)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -37,13 +53,15 @@ func (s *menuService) RetrieveMenuItems(ctx context.Context) ([]model.MenuItem, 
 	return s.MenuRepo.GetAll(ctx)
 }
 
-func (s *menuService) RetrieveMenuItem(ctx context.Context, id int) (*model.MenuItem, error) {
+func (s *menuService) RetrieveMenuItemWithId(ctx context.Context, id int) (*model.MenuItem, []model.MenuItemIngredients, error) {
 	menuItem, err := s.MenuRepo.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &menuItem, nil
+	menuItemIngredients, err := s.MenuIngredientsRepo.GetAllWithID(ctx, id)
+
+	return &menuItem, menuItemIngredients, nil
 }
 
 func (s *menuService) UpdateMenuItem(ctx context.Context, id int, item model.MenuItem) error {

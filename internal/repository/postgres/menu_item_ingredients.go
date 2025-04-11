@@ -35,16 +35,26 @@ func (r *MenuItemIngredients) Create(ctx context.Context, menu_ingredients model
 	return nil
 }
 
-func (r *MenuItemIngredients) Get(ctx context.Context, id int) (model.MenuItemIngredients, error) {
-	var menu_ingredients dao.MenuItemIngredients
-	query := "SELECT menu_id, ingredient_id, quantity FROM " + r.table + "WHERE id = $1"
+func (r *MenuItemIngredients) GetAllWithID(ctx context.Context, id int) ([]model.MenuItemIngredients, error) {
+	var ingredients []model.MenuItemIngredients
+	query := "SELECT menu_id, ingredient_id, quantity FROM " + r.table + "WHERE menu_id = $1"
 
-	err := r.conn.QueryRow(query, id).Scan(&menu_ingredients.MenuID, &menu_ingredients.IngredientID, &menu_ingredients.Quantity)
+	rows, err := r.conn.Query(query)
 	if err != nil {
-		return model.MenuItemIngredients{}, nil
+		return []model.MenuItemIngredients{}, err
 	}
 
-	return dao.ToIngredients(menu_ingredients), nil
+	for rows.Next() {
+		var ing dao.MenuItemIngredients
+		err := rows.Scan(&ing.MenuID, &ing.IngredientID, &ing.Quantity)
+		if err != nil {
+			return []model.MenuItemIngredients{}, err
+		}
+
+		ingredients = append(ingredients, dao.ToIngredients(ing))
+	}
+
+	return ingredients, nil
 }
 
 func (r *MenuItemIngredients) UPDATE(ctx context.Context, id int, menu_ingredients model.MenuItemIngredients) error {

@@ -2,13 +2,11 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"god"
 	"log/slog"
 	"net/http"
 	"strconv"
 
-	"coffee-shop/internal/service"
 	dto "coffee-shop/internal/transport/dto/inventory"
 	"coffee-shop/internal/transport/dto/response"
 )
@@ -43,12 +41,12 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 
 	err = item.Validate()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, god.H{"error": err.Error()})
+		h.handleError(c, err, http.StatusBadRequest)
 	}
 
 	err = h.service.AddInventoryItem(context.TODO(), item.ToDomain())
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -65,7 +63,7 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
 	object, err := h.service.RetrieveInventoryItems(context.TODO())
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -87,13 +85,13 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
 	object, err := h.service.RetrieveInventoryItem(context.TODO(), itemID)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -112,7 +110,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -125,7 +123,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 
 	err = h.service.UpdateInventoryItem(context.TODO(), itemID, item.ToDomain())
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -137,13 +135,13 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
 	err = h.service.DeleteInventoryItem(context.TODO(), itemID)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -152,12 +150,5 @@ func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
 }
 
 func (h *inventoryHandler) handleError(c *god.Context, err error, code int) {
-	var serviceErr *service.ServiceError
-	if errors.As(err, &serviceErr) {
-		c.JSON(serviceErr.Code, serviceErr.Hash())
-		return
-	}
-
-	h.log.Error("Error of InventoryHandler", slog.String("error", err.Error()))
-	c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
+	c.JSON(code, god.H{"error": err.Error()})
 }

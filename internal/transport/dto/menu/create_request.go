@@ -1,7 +1,11 @@
 package dto
 
+import (
+	"coffee-shop/internal/model"
+	"coffee-shop/internal/transport/dto"
+)
+
 type MenuItemRequest struct {
-	ID          string               `json:"product_id"`
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
 	Price       float64              `json:"price"`
@@ -9,26 +13,54 @@ type MenuItemRequest struct {
 }
 
 type MenuItemIngredient struct {
-	IngredientID string  `json:"ingredient_id"`
-	Quantity     float64 `json:"quantity"`
+	IngredientID int `json:"ingredient_id"`
+	Quantity     int `json:"quantity"`
 }
 
 func (r *MenuItemRequest) Validate() error {
-	// TODO: Write validation logic here
-	if r.ID == "" {
-		return nil
+	switch {
+	case r.Name == "":
+		return dto.ErrNotValidMenuItemName
+	case r.Description == "":
+		return dto.ErrNotValidMenuDescription
+	case r.Price <= 0:
+		return dto.ErrNotValidMenuPrice
+	case len(r.Ingredients) == 0:
+		return dto.ErrNotValidMenuIngredients
 	}
 
-	if r.Name == "" {
-		return nil
+	for _, i := range r.Ingredients {
+		i.Validate()
 	}
 
-	if r.Description == "" {
-		return nil
-	}
-
-	if r.Price < 0 {
-		return nil
-	}
 	return nil
+}
+
+func (r *MenuItemIngredient) Validate() error {
+	switch {
+	case r.Quantity <= 0:
+		return dto.ErrNotValdidMenuIngredientsQuantity
+	default:
+		return nil
+	}
+}
+
+func ToDomain(m MenuItemRequest) (model.MenuItem, []model.MenuItemIngredients) {
+	menuItem := model.MenuItem{
+		ID:          0,
+		Name:        m.Name,
+		Description: m.Description,
+		Price:       m.Price,
+	}
+
+	var ingredients []model.MenuItemIngredients
+	for _, ingredient := range m.Ingredients {
+		ingredients = append(ingredients, model.MenuItemIngredients{
+			MenuID:       0,
+			IngredientID: ingredient.IngredientID,
+			Quantity:     ingredient.Quantity,
+		})
+	}
+
+	return menuItem, ingredients
 }
