@@ -7,31 +7,30 @@ END
 $$;
 
 CREATE TYPE order_status AS ENUM ('open', 'closed');
-Create Type unit_types AS ENUM ('ml','shots', 'g');
+CREATE TYPE unit_types AS ENUM ('g', 'kg', 'ml', 'l', 'pcs', 'shots');
 
-
-Create Table inventory {
+CREATE TABLE inventory (
     IngredientID SERIAL PRIMARY KEY,
     Name VARCHAR(50) NOT NULL,
-    Quantity INT NOT NULL CHECK(Quantity >= 0)
+    Quantity INT NOT NULL CHECK(Quantity >= 0),
     Unit unit_types NOT NULL
-}
+);
 
-Create Table inventory_transactions {
+CREATE TABLE inventory_transactions (
     TransactionID SERIAL PRIMARY KEY,
-    IngredientID Int NOT NULL,
-    Quantity_change Int NOT NULL,
+    IngredientID INT NOT NULL,
+    Quantity_change INT NOT NULL,
     Reason TEXT NOT NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Foreign Key (IngredientID) Reference inventory(IngredientID)
-}
+    FOREIGN KEY (IngredientID) REFERENCES inventory(IngredientID)
+);
 
-Create Table menu_items {
+CREATE TABLE menu_items (
     ID SERIAL PRIMARY KEY,
     Name VARCHAR(50) NOT NULL,
     Description TEXT NOT NULL,
-    Price Numeric(10,2) NOT NUll CHECK(Price >= 0)
-}
+    Price NUMERIC(10, 2) NOT NULL CHECK(Price >= 0)
+);
 
 CREATE TABLE price_history (
     HistoryID SERIAL PRIMARY KEY,
@@ -42,37 +41,37 @@ CREATE TABLE price_history (
     FOREIGN KEY (Menu_ItemID) REFERENCES menu_items(ID)
 );
 
-Create Table menu_item_ingredients (
+CREATE TABLE menu_item_ingredients (
     MenuID INT NOT NULL,
     IngredientID INT NOT NULL,
     Quantity INT NOT NULL CHECK(Quantity >= 0),
-    Foreign Key (MenuID) Reference menu_items(ID) ON DELETE CASCADE,
-    Foreign Key (IngredientID) Reference inventory(IngredientID) 
-)
+    FOREIGN KEY (MenuID) REFERENCES menu_items(ID) ON DELETE CASCADE,
+    FOREIGN KEY (IngredientID) REFERENCES inventory(IngredientID)
+);
 
-Create Table orders {
+CREATE TABLE orders (
     ID SERIAL PRIMARY KEY,
     CustomerName VARCHAR(50) NOT NULL,
     Status order_status DEFAULT 'open',
     Notes JSONB,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-}
+);
 
-Create Table order_items{
-    OrderID Int,
-    ProductID Int NOT NULL,
-    Quantity Int NOT NULL CHECK(Quantity >= 0),
-    Foreign Key (OrderID) Reference orders(ID),
-    Foreign Key (ProductID) Reference menu_items(ID)
-}
+CREATE TABLE order_items (
+    OrderID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL CHECK(Quantity >= 0),
+    FOREIGN KEY (OrderID) REFERENCES orders(ID),
+    FOREIGN KEY (ProductID) REFERENCES menu_items(ID)
+);
 
-Create Table order_status_history{
+CREATE TABLE order_status_history (
     ID SERIAL PRIMARY KEY,
     OrderID INT NOT NULL,
     OpenedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ClosedAt TIMESTAMP,
-    Foreign Key (OrderID) Referenced orders(ID)
-}
+    FOREIGN KEY (OrderID) REFERENCES orders(ID)
+);
 
 -- menu_items
 CREATE INDEX idx_menu_items_name ON menu_items (Name);
@@ -94,7 +93,7 @@ CREATE INDEX idx_menu_item_ingredients_menu_id ON menu_item_ingredients (MenuID)
 CREATE INDEX idx_menu_item_ingredients_ingredient_id ON menu_item_ingredients (IngredientID);
 
 -- search indexes for full text search
-CREATE INDEX idx_menu_item_search_id on menu_items using gin(to_tsvector('english' , name || ' ' || COALESCE(description, '')));
+CREATE INDEX idx_menu_item_search_id ON menu_items USING gin(to_tsvector('english', name || ' ' || COALESCE(description, '')));
 
 -- Mock data for menu_items
 INSERT INTO menu_items (Name, Description, Price) VALUES
@@ -109,7 +108,6 @@ INSERT INTO menu_items (Name, Description, Price) VALUES
 ('Vanilla Latte', 'Espresso with steamed milk and vanilla syrup', 3.60),
 ('Chocolate Croissant', 'Flaky croissant with chocolate filling', 2.80);
 
-
 -- Mock data for inventory
 INSERT INTO inventory (Name, Quantity, Unit) VALUES
 ('Espresso Shot', 500, 'shots'),
@@ -122,7 +120,6 @@ INSERT INTO inventory (Name, Quantity, Unit) VALUES
 ('Coffee Beans', 2000, 'g'),
 ('Cocoa Powder', 1000, 'g'),
 ('Vanilla Syrup', 800, 'ml');
-
 
 -- Mock data for menu_item_ingredients
 INSERT INTO menu_item_ingredients (MenuID, IngredientID, Quantity) VALUES
@@ -146,8 +143,7 @@ INSERT INTO menu_item_ingredients (MenuID, IngredientID, Quantity) VALUES
 (9, 2, 200),  -- Vanilla Latte: 200 ml Milk
 (10, 7, 50);  -- Chocolate Croissant: 50 g Chocolate
 
-
--- Mock data for orders 
+-- Mock data for orders
 --2024
 INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
 ('tkoszhan', 'open', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
@@ -174,8 +170,6 @@ INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
 ('Steve Brown', 'closed', '{"notes": "Add extra ice"}', '2025-01-12 16:45:00'),
 ('Tina Pink', 'closed', '{"notes": "No milk, extra strong"}', '2025-01-13 17:00:00');
 
-
-
 -- 2024
 INSERT INTO order_items (OrderID, ProductID, Quantity) VALUES
 (1, 1, 1),  -- tkoszhan: 1 Caffe Latte
@@ -201,6 +195,4 @@ INSERT INTO order_items (OrderID, ProductID, Quantity) VALUES
 (15, 7, 1),  -- Oliver: 1 Americano
 (16, 8, 1),  -- Peter: 1 Carrot Cake
 (17, 10, 2),  -- Quincy: 2 Chocolate Croissants
-(18, 2, 1),  -- Rebecca: 1 Blueberry Muffin
-(19, 3, 1),  -- Steve: 1 Espresso
-(20, 9, 1);  -- Tina: 1 Vanilla Latte
+(18, 2, 1);  -- Rebecca: 1 Blueberry Muffin
