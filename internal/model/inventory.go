@@ -9,8 +9,6 @@ type Inventory struct {
 
 func (r *Inventory) Validate() error {
 	switch {
-	case r.IngredientID <= 0:
-		return ErrNotValidIngredientID
 	case r.Name == "":
 		return ErrNotValidIngredientName
 	case r.Quantity <= 0:

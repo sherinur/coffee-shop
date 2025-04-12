@@ -10,6 +10,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+
+	_ "github.com/lib/pq"
 )
 
 const serviceName = "coffee-shop"
@@ -40,10 +42,12 @@ func New(ctx context.Context, cfg *server.Config) (*App, error) {
 
 	// TODO: http service
 
-	handler.NewInventoryHandler(inventoryService, log)
+	inventoryhandler := handler.NewInventoryHandler(inventoryService, log)
 
+	srv := server.New(cfg, log)
+	srv.SetupInventoryRoutes(inventoryhandler)
 	return &App{
-		httpServer: server.New(cfg, log),
+		httpServer: srv,
 		log:        log,
 	}, nil
 }

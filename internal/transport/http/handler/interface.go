@@ -17,7 +17,7 @@ type MenuService interface {
 	AddMenuItem(ctx context.Context, menu model.MenuItem, ingredients []model.MenuItemIngredients) error
 	RetrieveMenuItems(ctx context.Context) ([]model.MenuItem, error)
 	RetrieveMenuItemWithId(ctx context.Context, id int) (*model.MenuItem, []model.MenuItemIngredients, error)
-	UpdateMenuItem(ctx context.Context, id int, item model.MenuItem) error
+	UpdateMenuItem(ctx context.Context, id int, item model.MenuItem, ingredients []model.MenuItemIngredients) error
 	DeleteMenuItem(ctx context.Context, id int) error
 }
 

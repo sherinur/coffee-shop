@@ -12,11 +12,11 @@ import (
 )
 
 type InventoryHandler interface {
-	AddInventoryItem(*god.Context)
-	GetInventoryItems(*god.Context)
-	GetInventoryItem(*god.Context)
-	UpdateInventoryItem(*god.Context)
-	DeleteInventoryItem(*god.Context)
+	AddInventoryItem(c *god.Context)
+	GetAllInventoryItems(c *god.Context)
+	GetInventoryItem(c *god.Context)
+	UpdateInventoryItem(c *god.Context)
+	DeleteInventoryItem(c *god.Context)
 }
 
 type inventoryHandler struct {
@@ -60,7 +60,7 @@ func (h *inventoryHandler) AddInventoryItem(c *god.Context) {
 
 // GetInventoryItems handles the HTTP request to retrieve inventory items.
 // It calls the service layer to get the list of inventory items, handles errors, and returns the data in the response.
-func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
+func (h *inventoryHandler) GetAllInventoryItems(c *god.Context) {
 	object, err := h.service.RetrieveInventoryItems(context.TODO())
 	if err != nil {
 		h.handleError(c, err, http.StatusBadRequest)
@@ -82,7 +82,7 @@ func (h *inventoryHandler) GetInventoryItems(c *god.Context) {
 
 // GetInventoryItem handles the HTTP request to retrieve a specific inventory item by its ID.
 func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
-	id := c.Request.PathValue("id")
+	id := c.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
 		h.handleError(c, err, http.StatusBadRequest)
@@ -96,7 +96,6 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 	}
 
 	item := dto.NewInventoryResponse(*object)
-
 	h.log.Debug("Retrieved inventory item with ID:", slog.String("itemId", id))
 	res := response.APIResponse{
 		Status: http.StatusOK,
@@ -107,7 +106,7 @@ func (h *inventoryHandler) GetInventoryItem(c *god.Context) {
 
 // UpdateInventoryItem handles the HTTP request to update an existing inventory item by its ID.
 func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
-	id := c.Request.PathValue("id")
+	id := c.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
 		h.handleError(c, err, http.StatusBadRequest)
@@ -115,7 +114,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 	}
 
 	var item dto.InventoryRequest
-	err = c.ShouldBindJSON(item)
+	err = c.ShouldBindJSON(&item)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"error": err.Error(), "message": "invalid request body"})
 		return
@@ -132,7 +131,7 @@ func (h *inventoryHandler) UpdateInventoryItem(c *god.Context) {
 }
 
 func (h *inventoryHandler) DeleteInventoryItem(c *god.Context) {
-	id := c.Request.PathValue("id")
+	id := c.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
 		h.handleError(c, err, http.StatusBadRequest)

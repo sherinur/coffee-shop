@@ -25,8 +25,8 @@ type MenuRepo interface {
 type MenuItemIngredientsRepo interface {
 	Create(ctx context.Context, menu_ingredients model.MenuItemIngredients) error
 	GetAllWithID(ctx context.Context, id int) ([]model.MenuItemIngredients, error)
-	UPDATE(ctx context.Context, id int, menu_ingredients model.MenuItemIngredients) error
-	DELETE(ctx context.Context, id int) error
+	Update(ctx context.Context, id int, menu_ingredients model.MenuItemIngredients) error
+	Delete(ctx context.Context, id int) error
 }
 
 type OrderRepo interface {

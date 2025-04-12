@@ -24,12 +24,12 @@ func (s *Server) registerRoutes() {
 	// s.registerReportRoutes()
 }
 
-func (s *Server) setupInventoryRoutes(handler handler.InventoryHandler) {
+func (s *Server) SetupInventoryRoutes(handler handler.InventoryHandler) {
 	s.r.POST(inventoryPrefix, handler.AddInventoryItem)
-	s.r.GET(inventoryPrefix, handler.GetInventoryItems)
-	s.r.GET(inventoryPrefix+"/{id}", handler.GetInventoryItem)
-	s.r.PUT(inventoryPrefix+"/{id}", handler.UpdateInventoryItem)
-	s.r.DELETE(inventoryPrefix+"/{id}", handler.DeleteInventoryItem)
+	s.r.GET(inventoryPrefix, handler.GetAllInventoryItems)
+	s.r.GET(inventoryPrefix+"/:id", handler.GetInventoryItem)
+	s.r.PUT(inventoryPrefix+"/:id", handler.UpdateInventoryItem)
+	s.r.DELETE(inventoryPrefix+"/:id", handler.DeleteInventoryItem)
 }
 
 // func (s *Server) registerMenuRoutes() {

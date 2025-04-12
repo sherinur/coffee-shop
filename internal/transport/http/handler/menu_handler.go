@@ -2,14 +2,11 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"god"
 	"log/slog"
 	"net/http"
 	"strconv"
 
-	"coffee-shop/internal/model"
-	"coffee-shop/internal/service"
 	dto "coffee-shop/internal/transport/dto/menu"
 )
 
@@ -44,7 +41,7 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 	item, ingredients := dto.ToDomain(menu)
 	err = h.service.AddMenuItem(context.TODO(), item, ingredients)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 		return
 	}
 
@@ -57,7 +54,7 @@ func (h *menuHandler) AddMenuItem(c *god.Context) {
 func (h *menuHandler) GetAllMenuItems(c *god.Context) {
 	items, err := h.service.RetrieveMenuItems(context.TODO())
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 		return
 	}
 	h.log.Debug("Retrieved Menu items")
@@ -71,13 +68,13 @@ func (h *menuHandler) GetMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 		return
 	}
 
 	item, ingredient, err := h.service.RetrieveMenuItemWithId(context.TODO(), itemID)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 		return
 	}
 
@@ -92,8 +89,8 @@ func (h *menuHandler) GetMenuItem(c *god.Context) {
 // calls the service layer to update the menu item. In case of errors, it responds
 // with the appropriate HTTP status and error message.
 func (h *menuHandler) UpdateMenuItem(c *god.Context) {
-	var item model.MenuItem
-	err := c.ShouldBindJSON(&item)
+	var menu dto.MenuItemRequest
+	err := c.ShouldBindJSON(&menu)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, god.H{"code": http.StatusBadRequest, "error": err.Error(), "message": "Invalid request body"})
 		return
@@ -102,12 +99,14 @@ func (h *menuHandler) UpdateMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 		return
 	}
-	err = h.service.UpdateMenuItem(context.TODO(), itemID, item)
+
+	item, ingredients := dto.ToDomain(menu)
+	err = h.service.UpdateMenuItem(context.TODO(), itemID, item, ingredients)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 	}
 
 	c.Status(http.StatusOK)
@@ -120,23 +119,18 @@ func (h *menuHandler) DeleteMenuItem(c *god.Context) {
 	id := c.Request.PathValue("id")
 	itemID, err := strconv.Atoi(id)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 	}
+
 	err = h.service.DeleteMenuItem(context.TODO(), itemID)
 	if err != nil {
-		h.handleError(c, err)
+		h.handleError(c, err, 400)
 	}
 
 	h.log.Debug("Successfully deleted a menu item with ID ", slog.String("id", id))
 	c.Status(http.StatusNoContent)
 }
 
-func (h *menuHandler) handleError(c *god.Context, err error) {
-	var serviceErr *service.ServiceError
-	if errors.As(err, &serviceErr) {
-		c.JSON(serviceErr.Code, serviceErr.Hash())
-	} else {
-		h.log.Error("Error of MenuHandler", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, god.H{"error": err.Error(), "message": "internal server error"})
-	}
+func (h *menuHandler) handleError(c *god.Context, err error, code int) {
+	c.JSON(code, god.H{"error": err.Error()})
 }

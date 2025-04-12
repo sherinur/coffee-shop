@@ -99,3 +99,7 @@ func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
+
+func (c *Context) PathValue(key string) string {
+	return c.Params[key]
+}

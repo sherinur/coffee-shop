@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -47,17 +48,29 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := req.Method
 	path := req.URL.Path
 
+	// Exact match
 	if handlers, ok := r.routes[method][path]; ok {
 		c := NewContext(w, req)
-
-		// TODO: Implement Params parsing and storing
-
 		c.fullPath = path
 		c.handlers = handlers
 		c.Next()
-	} else {
-		http.NotFound(w, req)
+		return
 	}
+
+	// Match with parameters
+	for routePath, handlers := range r.routes[method] {
+		if params, ok := matchRoute(routePath, path); ok {
+			c := NewContext(w, req)
+			c.Params = params // Store the parsed parameters
+			c.fullPath = routePath
+			c.handlers = handlers
+			c.Next()
+			return
+		}
+	}
+
+	// If no match, return 404
+	http.NotFound(w, req)
 }
 
 // GET registers a GET route.
@@ -90,4 +103,36 @@ func (r *Router) Run(addr string) error {
 		}
 	}
 	return http.ListenAndServe(addr, r)
+}
+
+func matchRoute(routePath, requestPath string) (map[string]string, bool) {
+	routeParts := strings.Split(routePath, "/")
+	requestParts := strings.Split(requestPath, "/")
+
+	if len(routeParts) != len(requestParts) {
+		return nil, false
+	}
+
+	params := make(map[string]string)
+	for i, routePart := range routeParts {
+		if strings.HasPrefix(routePart, ":") {
+			paramName := strings.TrimPrefix(routePart, ":")
+			params[paramName] = requestParts[i]
+		} else if routePart != requestParts[i] {
+			return nil, false
+		}
+	}
+
+	return params, true
+}
+
+func splitPath(path string) []string {
+	// Split the path into parts, ignoring leading/trailing slashes
+	parts := []string{}
+	for _, part := range strings.Split(path, "/") {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return parts
 }

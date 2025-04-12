@@ -36,7 +36,6 @@ func (r *JSON) WriteJSONResponse(code int, w http.ResponseWriter) error {
 	}
 	return nil
 }
-
 func (r *JSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(jsonContentType, w)
 }

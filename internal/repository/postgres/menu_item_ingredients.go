@@ -57,7 +57,7 @@ func (r *MenuItemIngredients) GetAllWithID(ctx context.Context, id int) ([]model
 	return ingredients, nil
 }
 
-func (r *MenuItemIngredients) UPDATE(ctx context.Context, id int, menu_ingredients model.MenuItemIngredients) error {
+func (r *MenuItemIngredients) Update(ctx context.Context, id int, menu_ingredients model.MenuItemIngredients) error {
 	object := dao.FromIngredients(menu_ingredients)
 	query := "UPDATE " + r.table + " SET menu_id = $1, , ingredient_id = $2, quantity = $3 WHERE id = $4"
 
@@ -69,8 +69,8 @@ func (r *MenuItemIngredients) UPDATE(ctx context.Context, id int, menu_ingredien
 	return nil
 }
 
-func (r *MenuItemIngredients) DELETE(ctx context.Context, id int) error {
-	query := "DELETE FROM " + r.table + " WHERE id = $1"
+func (r *MenuItemIngredients) Delete(ctx context.Context, id int) error {
+	query := "DELETE FROM " + r.table + " WHERE menu_id = $1"
 
 	_, err := r.conn.Exec(query, id)
 	if err != nil {

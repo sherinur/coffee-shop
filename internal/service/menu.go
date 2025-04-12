@@ -49,6 +49,7 @@ func (s *menuService) AddMenuItem(ctx context.Context, menu model.MenuItem, ingr
 	return nil
 }
 
+// rewrite for psql
 func (s *menuService) RetrieveMenuItems(ctx context.Context) ([]model.MenuItem, error) {
 	return s.MenuRepo.GetAll(ctx)
 }
@@ -64,11 +65,18 @@ func (s *menuService) RetrieveMenuItemWithId(ctx context.Context, id int) (*mode
 	return &menuItem, menuItemIngredients, nil
 }
 
-func (s *menuService) UpdateMenuItem(ctx context.Context, id int, item model.MenuItem) error {
+// rewrite for psql
+func (s *menuService) UpdateMenuItem(ctx context.Context, id int, item model.MenuItem, ingredients []model.MenuItemIngredients) error {
 	// New item validation
 	err := item.Validate()
 	if err != nil {
 		return err
+	}
+
+	for _, i := range ingredients {
+		if err := i.Validate(); err != nil {
+			return err
+		}
 	}
 
 	// Rewriting old item in repo
@@ -77,9 +85,26 @@ func (s *menuService) UpdateMenuItem(ctx context.Context, id int, item model.Men
 		return nil
 	}
 
+	for _, i := range ingredients {
+		err := s.MenuIngredientsRepo.Update(ctx, id, i)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (s *menuService) DeleteMenuItem(ctx context.Context, id int) error {
-	return s.MenuRepo.Delete(ctx, id)
+	err := s.MenuRepo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	err = s.MenuIngredientsRepo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

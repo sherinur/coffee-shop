@@ -37,7 +37,7 @@ func (i *Inventory) Create(ctx context.Context, item model.Inventory) error {
 
 func (i *Inventory) Get(ctx context.Context, id int) (model.Inventory, error) {
 	var item dao.Inventory
-	query := "SELECT id, name, quantity, unit FROM " + i.table + " WHERE id = $1"
+	query := "SELECT ingredientid, name, quantity, unit FROM " + i.table + " WHERE ingredientid = $1"
 
 	err := i.conn.QueryRow(query, id).Scan(&item.Id, &item.Name, &item.Quantity, &item.Unit)
 	if err != nil {
@@ -71,7 +71,7 @@ func (i *Inventory) GetAll(ctx context.Context) ([]model.Inventory, error) {
 }
 
 func (i *Inventory) Update(ctx context.Context, id int, item model.Inventory) error {
-	query := "UPDATE " + i.table + " SET name = $1, quantity = $2, unit = $3 WHERE id = $4"
+	query := "UPDATE " + i.table + " SET name = $1, quantity = $2, unit = $3 WHERE ingredientid = $4"
 	daoItem := dao.FromInventory(item)
 
 	_, err := i.conn.Exec(query, daoItem.Name, daoItem.Quantity, daoItem.Unit, id)
@@ -83,7 +83,7 @@ func (i *Inventory) Update(ctx context.Context, id int, item model.Inventory) er
 }
 
 func (i *Inventory) Delete(ctx context.Context, id int) error {
-	query := "DELETE FROM " + i.table + " WHERE id = $1"
+	query := "DELETE FROM " + i.table + " WHERE ingredientid = $1"
 
 	_, err := i.conn.Exec(query, id)
 	if err != nil {
